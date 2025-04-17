@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Excel Template</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #4f46e5;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .company-section {
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f4f6;
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .download-btn:hover {
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body>
+    <h1>Excel Template Instructions</h1>
+    
+    <div class="instructions">
+        <h2>How to Use This Template</h2>
+        <p>This page provides instructions for creating a valid Excel file for the Payroll Management System. Please follow these guidelines carefully:</p>
+        <ol>
+            <li>Create an Excel file with multiple sheets, one for each company</li>
+            <li>Name each sheet according to the company name (e.g., "Golana", "Naps", etc.)</li>
+            <li>Each sheet must contain the required columns for that specific company</li>
+            <li>Fill in employee data in each row</li>
+        </ol>
+    </div>
+    
+    <div class="company-section">
+        <h2>Golana Company</h2>
+        <p>Sheet name should be: <strong>Golana</strong></p>
+        <p>Required columns:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Card No</th>
+                    <th>NAME</th>
+                    <th>Bank Transfer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>EMP001</td>
+                    <td>John Doe</td>
+                    <td>25000</td>
+                </tr>
+                <tr>
+                    <td>EMP002</td>
+                    <td>Jane Smith</td>
+                    <td>30000</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="company-section">
+        <h2>Naps Company</h2>
+        <p>Sheet name should be: <strong>Naps</strong></p>
+        <p>Required columns:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>INTER ID</th>
+                    <th>NAME</th>
+                    <th>Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>N001</td>
+                    <td>Robert Johnson</td>
+                    <td>28000</td>
+                </tr>
+                <tr>
+                    <td>N002</td>
+                    <td>Sarah Williams</td>
+                    <td>32000</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="company-section">
+        <h2>Other Companies</h2>
+        <p>Follow the same pattern for other companies, using the appropriate column names:</p>
+        <ul>
+            <li><strong>Nayana:</strong> 'Employee Code', 'Name of the employee', 'Net Payable'</li>
+            <li><strong>SG:</strong> 'card no', 'NAME', 'Bank Transfer'</li>
+            <li><strong>Ink:</strong> 'Employee Code', 'Name of the employee', 'Bank Transfer'</li>
+            <li><strong>golden eye:</strong> 'Emp Code', 'Names', 'CTC'</li>
+            <li><strong>Genius:</strong> 'Card No', 'NAME', 'BANK Transfer'</li>
+            <li><strong>Amigo:</strong> 'Emp Code', 'Names', 'Bank Statement'</li>
+        </ul>
+    </div>
+    
+    <a href="/sample-template.xlsx" class="download-btn">Download Sample Excel Template</a>
+    
+    <p style="margin-top: 30px; color: #6b7280;">
+        Note: If you're having trouble with the upload, please ensure that your Excel file follows this structure exactly.
+        Column names are case-sensitive and must match exactly as shown above.
+    </p>
+</body>
+</html>
