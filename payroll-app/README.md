@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Payroll Management System is a comprehensive solution designed to streamline and automate the payroll process for Golana employees. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
+The Payroll Management System is a comprehensive solution designed to streamline and automate the payroll process for employees. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
 
 ## Features
 
