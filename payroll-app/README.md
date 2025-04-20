@@ -91,12 +91,13 @@ The system implements the following calculation logic:
 
 ## Recent Updates
 
-### Version 1.1.0 (June 2023)
+### Version 1.1.0 (April 2025)
 
 - **Dark Mode Implementation**: Added support for dark mode across all pages for better viewing in low-light environments
 - **Single Company Focus**: Streamlined the interface to focus on a single company's payroll management
 - **UI Improvements**: Enhanced spacing and alignment in the filter sections
 - **Persistence Enhancements**: Added localStorage support for "Mark as Paid" status to persist across page refreshes
+- **Minor Bug Fixes**: Fixed a few technical glitches.
 
 ## License
 
