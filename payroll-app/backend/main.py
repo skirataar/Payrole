@@ -83,7 +83,7 @@ def find_header_row(df: pd.DataFrame) -> int:
 def get_company_specific_columns(company_name: str) -> Dict[str, str]:
     """Get company-specific column mappings."""
     mappings = {
-        'Golana': {
+        'Company1': {
             'employee_id': 'Card No',
             'name': 'NAME',
             'net_salary': 'Bank Transfer'
@@ -138,7 +138,7 @@ def parse_excel_sheet(df: pd.DataFrame, company_name: str) -> List[Dict]:
         print("Cleaned columns:", df.columns.tolist())
 
         mappings = {
-            'Golana': {
+            'Company1': {
                 'employee_id': 'Card No',
                 'name': 'NAME',
                 'net_salary': 'Bank Transfer'
@@ -245,7 +245,9 @@ async def upload_excel(file: UploadFile, column_mappings: Optional[str] = None):
 
     try:
         contents = await file.read()
-        excel_file = pd.ExcelFile(io.BytesIO(contents))
+        # Use pandas options to preserve float precision
+        with pd.option_context('display.float_format', '{:.10f}'.format):
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
 
         if not excel_file.sheet_names:
             raise HTTPException(
@@ -376,7 +378,7 @@ async def upload_excel(file: UploadFile, column_mappings: Optional[str] = None):
         )
 
 @app.post("/api/upload_excel_by_position")
-async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[str] = Form(None)):
+async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[str] = Form(None), month: Optional[str] = Form(None)):
     """Upload and process Excel file using column positions instead of column names."""
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(
@@ -397,7 +399,9 @@ async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[s
                 )
 
         contents = await file.read()
-        excel_file = pd.ExcelFile(io.BytesIO(contents))
+        # Use pandas options to preserve float precision
+        with pd.option_context('display.float_format', '{:.10f}'.format):
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
 
         if not excel_file.sheet_names:
             raise HTTPException(
@@ -408,7 +412,15 @@ async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[s
         # Process the Excel file using column positions
         processed_data = excel_processor.process_excel_file_by_position(excel_file, mappings)
 
+        # Add month information if provided
+        if month:
+            print(f"Adding month information: {month}")
+            processed_data["month"] = month
 
+            # Add month to each employee record
+            for company in processed_data["companies"]:
+                for employee in company["employees"]:
+                    employee["month"] = month
 
         # Don't create dummy data if no companies found
         if not processed_data["companies"]:

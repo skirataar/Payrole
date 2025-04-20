@@ -1,8 +1,8 @@
-# Golana Payroll Management System
+# Payroll Pro
 
 ## Overview
 
-The Golana Payroll Management System is a comprehensive solution designed to streamline and automate the payroll process for Golana employees. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
+Payroll Pro is a comprehensive solution designed to streamline and automate the payroll process for your company. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
 
 ## Features
 
@@ -12,6 +12,7 @@ The Golana Payroll Management System is a comprehensive solution designed to str
 - **Detailed Salary Reports**: Generate comprehensive salary reports with filtering and sorting capabilities
 - **Payment Tracking**: Mark employees as paid and track payment status
 - **Configurable Settings**: Customize calculation parameters such as VDA rates, ESI percentages, and PF contributions
+- **Dark Mode Support**: Toggle between light and dark themes for comfortable viewing in any environment
 
 ## Technology Stack
 
@@ -26,13 +27,16 @@ The Golana Payroll Management System is a comprehensive solution designed to str
 
 The system implements the following calculation logic:
 
-- **Monthly Salary**: Daily rate × Attendance days
+- **Attendance**: Stored and processed as float values to maintain decimal precision (e.g., 23.5 days)
+- **Monthly Salary**: Daily rate × Attendance days (using float attendance values)
 - **VDA**: Fixed rate (currently 135.32)
 - **PL**: (Daily salary + VDA rate)/30 × 1.5
 - **Bonus**: (Daily salary + VDA rate) × Bonus percentage/100
 - **ESI**: Employee contribution (0.75%) and Employer contribution (3.25%)
 - **PF**: Employee contribution (12%) and Employer contribution (13%)
 - **Deductions**: Uniform deduction, Professional Tax, etc.
+
+> **Important**: Attendance values are maintained as floats throughout all calculations to ensure accurate billing and payroll processing. Decimal places in attendance (e.g., 23.38 days) are preserved and used in all salary calculations.
 
 ## Getting Started
 
@@ -76,7 +80,17 @@ The system implements the following calculation logic:
 2. **Upload Excel**: Upload employee attendance data from Excel files
 3. **Salary Report**: View detailed salary reports with filtering and sorting options
 4. **Settings**: Configure calculation parameters and system settings
+   - Toggle dark mode using the switch in the settings page for comfortable viewing in low-light environments
+
+## Recent Updates
+
+### Version 1.1.0 (June 2023)
+
+- **Dark Mode Implementation**: Added support for dark mode across all pages for better viewing in low-light environments
+- **Single Company Focus**: Streamlined the interface to focus on a single company's payroll management
+- **UI Improvements**: Enhanced spacing and alignment in the filter sections
+- **Persistence Enhancements**: Added localStorage support for "Mark as Paid" status to persist across page refreshes
 
 ## License
 
-This project is proprietary software developed for Golana.
+This project is proprietary software developed for internal company use.

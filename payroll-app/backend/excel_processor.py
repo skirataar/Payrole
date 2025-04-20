@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Dict, List, Any
 import sys
+import json
 
 # Fix for LogCapture issue
 class LogCapture:
@@ -48,7 +49,7 @@ def parse_excel_by_position(
         df: DataFrame containing the Excel sheet data
         company_name: Name of the company (sheet name)
         column_mappings: Dictionary mapping company names to column positions
-            e.g. {'Golana': {'employee_id': 'B', 'name': 'E', 'net_salary': 'AH'}}
+            e.g. {'Company1': {'employee_id': 'B', 'name': 'E', 'net_salary': 'AH'}}
 
     Returns:
         List of employee dictionaries
@@ -135,7 +136,7 @@ def parse_excel_by_position(
                                 print(f"Found employee_id: '{employee_id}' at column index {column_indices['employee_id']} (Column {column_indices['employee_id']+1})")
 
                                 # Special debug for specific employee IDs
-                                if employee_id in ['GO1492', 'GO1510', 'GO1511', 'GO1515', 'GO1520']:
+                                if employee_id in ['EMP1492', 'EMP1510', 'EMP1511', 'EMP1515', 'EMP1520']:
                                     print(f"SPECIAL DEBUG - Found target employee ID: {employee_id}")
                                     print(f"SPECIAL DEBUG - Row data: {row.iloc[:5].tolist()}")
                                     print(f"SPECIAL DEBUG - Row index: {idx}")
@@ -242,13 +243,33 @@ def parse_excel_by_position(
                         attendance_value = row.iloc[column_indices['attendance']]
                         if pd.notna(attendance_value):
                             try:
-                                # Keep attendance as a float
-                                attendance_days = float(str(attendance_value).replace(',', ''))
-                                print(f"Found attendance days: {attendance_days} (Type: {type(attendance_days).__name__})")
+                                # CRITICAL: Ensure attendance is treated as a float with decimal precision
+                                # First, convert to string to handle any format
+                                attendance_str = str(attendance_value).replace(',', '').strip()
+
+                                # Then convert to float - this is the critical step
+                                # We need to ensure we're using the exact float value for all calculations
+                                attendance_days = float(attendance_str)
+
+                                # Debug the decimal part to ensure it's preserved
+                                if '.' in attendance_str and attendance_str.split('.')[-1] != '0':
+                                    print(f"DECIMAL PRESERVATION - Value has decimal part: {attendance_str} -> {attendance_days}")
+                                else:
+                                    print(f"DECIMAL PRESERVATION - Value is whole number or .0: {attendance_str} -> {attendance_days}")
+
+                                print(f"Found attendance days: {attendance_days} (Type: {type(attendance_days).__name__})"
+                                      f" - Original value: {attendance_value} (Type: {type(attendance_value).__name__})")
 
                                 # Special debug for specific employee IDs
-                                if employee_id in ['GO1492', 'GO1510', 'GO1511', 'GO1515', 'GO1520']:
-                                    print(f"SPECIAL DEBUG - Found attendance for {employee_id}: {attendance_days} (Type: {type(attendance_days).__name__})")
+                                if employee_id in ['EMP1492', 'EMP1510', 'EMP1511', 'EMP1515', 'EMP1520']:
+                                    print(f"\n==== CRITICAL DEBUG FOR {employee_id} =====")
+                                    print(f"1. Raw attendance value: {attendance_value} (Type: {type(attendance_value).__name__})")
+                                    print(f"2. Converted to string: '{attendance_str}'")
+                                    print(f"3. Final float value: {attendance_days} (Type: {type(attendance_days).__name__})")
+                                    print(f"4. Verification - float('{attendance_str}') = {float(attendance_str)}")
+                                    print(f"5. String representation: str({attendance_days}) = '{str(attendance_days)}'")
+                                    print(f"6. Format with 2 decimal places: {attendance_days:.2f}")
+                                    print(f"==== END DEBUG FOR {employee_id} =====")
                                 # Validate attendance days (should be between 0 and 31)
                                 if attendance_days < 0 or attendance_days > 31:
                                     print(f"Invalid attendance days: {attendance_days}, using default 26")
@@ -275,12 +296,23 @@ def parse_excel_by_position(
                 print(f"Bonus rate: {bonus_rate}")
 
                 # Monthly calculations based on attendance
+                # CRITICAL: Ensure we're using the float value of attendance_days
+                print(f"\nCALCULATION DEBUG - Before monthly salary calculation:")
+                print(f"Daily salary: {daily_salary} (Type: {type(daily_salary).__name__})")
+                print(f"Attendance days: {attendance_days} (Type: {type(attendance_days).__name__})")
+
                 monthly_salary = daily_salary * attendance_days  # Monthly salary: Daily salary * Attendance
                 print(f"Monthly salary: {monthly_salary} = {daily_salary} * {attendance_days} (Type: {type(monthly_salary).__name__})")
 
                 # Special debug for specific employee IDs
-                if employee_id in ['GO1492', 'GO1510', 'GO1511', 'GO1515', 'GO1520']:
-                    print(f"SPECIAL DEBUG - Monthly salary for {employee_id}: {monthly_salary} = {daily_salary} * {attendance_days}")
+                if employee_id in ['EMP1492', 'EMP1510', 'EMP1511', 'EMP1515', 'EMP1520']:
+                    print(f"\n==== CALCULATION DEBUG FOR {employee_id} =====")
+                    print(f"1. Daily salary: {daily_salary} (Type: {type(daily_salary).__name__})")
+                    print(f"2. Attendance days: {attendance_days} (Type: {type(attendance_days).__name__})")
+                    print(f"3. Calculation: {daily_salary} * {attendance_days} = {daily_salary * attendance_days}")
+                    print(f"4. Monthly salary result: {monthly_salary} (Type: {type(monthly_salary).__name__})")
+                    print(f"5. Verification - {daily_salary:.2f} * {attendance_days:.2f} = {(daily_salary * attendance_days):.2f}")
+                    print(f"==== END CALCULATION DEBUG FOR {employee_id} =====")
 
                 vda = vda_rate * attendance_days  # VDA: VDA Rate * Attendance
                 print(f"VDA: {vda}")
@@ -474,11 +506,22 @@ def parse_excel_by_position(
                 net_salary = bank_transfer
                 earned_wage = monthly_salary
 
+                # CRITICAL: Store attendance_days as a float to ensure it's used correctly in calculations
+                # This is the key change - we're storing it as a float, not a string
+
+                # Special debug for specific employee IDs
+                if employee_id in ['GO1492', 'GO1510', 'GO1511', 'GO1515', 'GO1520']:
+                    print(f"\n==== ATTENDANCE DEBUG FOR {employee_id} =====")
+                    print(f"1. Original attendance_days: {attendance_days} (Type: {type(attendance_days).__name__})")
+                    print(f"2. Float representation: {float(attendance_days)}")
+                    print(f"3. Will be stored in employee object as float: {attendance_days}")
+                    print(f"==== END ATTENDANCE DEBUG FOR {employee_id} =====")
+
                 employee = {
                     'employee_id': employee_id.strip(),
                     'name': name.strip(),
                     'daily_salary': daily_salary,
-                    'attendance_days': attendance_days,
+                    'attendance_days': attendance_days,  # Store as float for calculations
                     'vda_rate': vda_rate,
                     'pl': pl,
                     'bonus_rate': bonus_rate,
@@ -542,11 +585,17 @@ def parse_excel_by_position(
 
                 # Add the employee if we have a name and either an ID or salary
                 # Special debug for specific employee IDs
-                if employee['employee_id'] in ['GO1492', 'GO1510', 'GO1511', 'GO1515', 'GO1520']:
-                    print(f"SPECIAL DEBUG - Found employee ID: {employee['employee_id']}, Name: {employee['name']}, Salary: {employee['net_salary']}")
-                    print(f"SPECIAL DEBUG - Attendance: {employee['attendance_days']} (Type: {type(employee['attendance_days']).__name__})")
-                    print(f"SPECIAL DEBUG - Monthly Salary: {employee['monthly_salary']} = {employee['daily_salary']} * {employee['attendance_days']}")
-                    print(f"SPECIAL DEBUG - Will be added: {bool(employee['name'] and (employee['employee_id'] or employee['net_salary'] > 0))}")
+                if employee['employee_id'] in ['EMP1492', 'EMP1510', 'EMP1511', 'EMP1515', 'EMP1520']:
+                    print(f"\n==== FINAL EMPLOYEE OBJECT DEBUG FOR {employee['employee_id']} =====")
+                    print(f"1. Employee ID: {employee['employee_id']}")
+                    print(f"2. Name: {employee['name']}")
+                    print(f"3. Attendance days: {employee['attendance_days']} (Type: {type(employee['attendance_days']).__name__})")
+                    print(f"4. Daily salary: {employee['daily_salary']}")
+                    print(f"5. Monthly salary: {employee['monthly_salary']} = {employee['daily_salary']} * {employee['attendance_days']}")
+                    print(f"6. Verification - {employee['daily_salary']:.2f} * {employee['attendance_days']:.2f} = {(employee['daily_salary'] * employee['attendance_days']):.2f}")
+                    print(f"7. Will be added: {bool(employee['name'] and (employee['employee_id'] or employee['net_salary'] > 0))}")
+                    print(f"8. JSON representation: {json.dumps({'attendance': employee['attendance_days']}, default=float)}")
+                    print(f"==== END FINAL DEBUG FOR {employee['employee_id']} =====")
 
                 if employee['name'] and (employee['employee_id'] or employee['net_salary'] > 0):
                     # If we don't have a valid salary, set a default
@@ -613,7 +662,23 @@ def process_excel_file_by_position(
                 continue
 
             print(f"\nProcessing sheet: {sheet_name}")
-            df = pd.read_excel(excel_file, sheet_name=sheet_name)
+            # Read Excel file with explicit options to preserve decimal places
+            # Set converters for column 3 (index 2) to force float conversion with decimal preservation
+            # This is critical for attendance values like 23.38
+            converters = {2: lambda x: float(str(x).replace(',', ''))}  # Column 3 (index 2) is attendance
+
+            # Use pandas options to ensure float precision is preserved
+            with pd.option_context('display.precision', 10):
+                df = pd.read_excel(excel_file, sheet_name=sheet_name, converters=converters, dtype={2: float})
+
+            # Print raw data for debugging
+            print("\nRAW DATA DEBUG - First 10 rows with attendance values:")
+            for i in range(min(10, len(df))):
+                try:
+                    raw_value = df.iloc[i, 2]  # Column 3 (index 2) is attendance
+                    print(f"Row {i+1} - Raw attendance: {raw_value} (Type: {type(raw_value).__name__})")
+                except Exception as e:
+                    print(f"Row {i+1} - Error reading attendance: {str(e)}")
 
             # Skip empty sheets
             if df.empty:

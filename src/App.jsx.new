@@ -10,9 +10,6 @@ import Settings from './pages/Settings';
 // Import layout
 import Layout from './components/Layout';
 
-// Import theme provider
-import { ThemeProvider } from './context/ThemeContext';
-
 function App() {
   // State to store uploaded data with localStorage persistence
   const [uploadedData, setUploadedData] = useState(() => {
@@ -26,18 +23,16 @@ function App() {
   }, [uploadedData]);
 
   return (
-    <ThemeProvider>
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard uploadedData={uploadedData} />} />
-            <Route path="/upload" element={<UploadExcel setUploadedData={setUploadedData} />} />
-            <Route path="/salary-report" element={<SalaryReport uploadedData={uploadedData} />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </Layout>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard uploadedData={uploadedData} />} />
+          <Route path="/upload" element={<UploadExcel setUploadedData={setUploadedData} />} />
+          <Route path="/salary-report" element={<SalaryReport uploadedData={uploadedData} />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 

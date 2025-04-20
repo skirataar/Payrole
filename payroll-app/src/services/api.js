@@ -1,31 +1,29 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000';  // Remove /api from base URL
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const API_BASE_URL = 'http://localhost:5000';
 
 export const clearDatabase = async () => {
   try {
     console.log('Clearing database...');
-    const response = await api.delete('/api/clear-data');
-    console.log('Database cleared successfully:', response.data);
-    return response.data;
+    const response = await fetch(`${API_BASE_URL}/api/clear-data`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Database cleared successfully:', data);
+    return data;
   } catch (error) {
     console.error('Error clearing database:', error);
     // Create a more descriptive error
-    const errorMessage = error.response?.data?.detail ||
-                         error.message ||
-                         'An unknown error occurred while clearing the database';
+    const errorMessage = error.message || 'An unknown error occurred while clearing the database';
     throw new Error(errorMessage);
   }
 };
 
-export const uploadExcelFile = async (file) => {
+export const uploadExcelFile = async (file, month = null) => {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -48,76 +46,96 @@ export const uploadExcelFile = async (file) => {
 
   formData.append('column_mappings', JSON.stringify(defaultMappings));
 
+  // Add month parameter if provided
+  if (month) {
+    formData.append('month', month);
+  }
+
   try {
     // Use the endpoint that creates a log file
     const endpoint = '/api/upload_excel_by_position';
     console.log('Uploading file to endpoint:', endpoint);
+    console.log('File being uploaded:', file.name, 'Size:', file.size, 'bytes');
 
-    // Set a longer timeout for large files
-    const response = await api.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      timeout: 60000, // 60 seconds timeout for large files
+    // Try using fetch directly instead of axios
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      body: formData,
+      // No need to set Content-Type header, fetch will set it automatically with the boundary
     });
 
-    console.log('Upload response:', response.data);
-    return response.data;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Upload response:', data);
+    return data;
   } catch (error) {
     console.error('Upload error details:', {
       message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      details: error.response?.data?.detail
+      name: error.name,
+      stack: error.stack
     });
 
     // Create a custom error object with details
     let errorMessage = 'An error occurred while uploading the file.';
 
-    if (!error.response) {
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       errorMessage = 'Cannot connect to server. Is it running at http://localhost:5000?';
-    } else if (error.response.status === 404) {
+    } else if (error.message.includes('404')) {
       errorMessage = 'Upload endpoint not found. Is the backend server running?';
-    } else if (error.response.status === 400) {
+    } else if (error.message.includes('400')) {
       errorMessage = 'Invalid file format or content. Please check the Excel file structure.';
-    } else if (error.response.data?.detail) {
-      errorMessage = error.response.data.detail;
+    } else {
+      errorMessage = error.message || errorMessage;
     }
 
-    const errorObj = new Error(errorMessage);
-
-    // Add details property to the error object
-    errorObj.details = error.response?.data?.detail || errorMessage;
-    errorObj.status = error.response?.status || null;
-    errorObj.response = error.response?.data || null;
-
-    throw errorObj;
+    console.log('Final error message:', errorMessage);
+    throw new Error(errorMessage);
   }
 };
 
 export const getEmployees = async (companyId = null) => {
   try {
-    const params = companyId ? { company_id: companyId } : {};
-    const response = await api.get('/api/employees', { params });  // Add /api prefix
-    return response.data;
+    const url = companyId
+      ? `${API_BASE_URL}/api/employees?company_id=${encodeURIComponent(companyId)}`
+      : `${API_BASE_URL}/api/employees`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server responded with status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch employees');
+    console.error('Error fetching employees:', error);
+    throw new Error(error.message || 'Failed to fetch employees');
   }
 };
 
 export const getCompanies = async () => {
   try {
-    const response = await api.get('/api/companies');
-    return response.data;
-  } catch (error) {
-    if (error.response?.data?.detail) {
-      throw new Error(error.response.data.detail);
+    const response = await fetch(`${API_BASE_URL}/api/companies`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server responded with status: ${response.status}`);
     }
-    throw new Error('Failed to fetch companies data');
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    throw new Error(error.message || 'Failed to fetch companies data');
   }
 };
 
 export default {
   uploadExcelFile,
   clearDatabase,
+  getEmployees,
+  getCompanies
 };
