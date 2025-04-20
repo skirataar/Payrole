@@ -1,7 +1,7 @@
 # Payroll Pro
 
 ## Overview
-
+=======
 Payroll Pro is a comprehensive solution designed to streamline and automate the payroll process for your company. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
 =======
 # Payroll Management System
