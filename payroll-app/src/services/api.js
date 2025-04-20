@@ -12,6 +12,9 @@ export const clearDatabase = async () => {
       throw new Error(errorData.detail || `Server responded with status: ${response.status}`);
     }
 
+    // Also clear payment status data from localStorage
+    localStorage.removeItem('paidEmployees');
+
     const data = await response.json();
     console.log('Database cleared successfully:', data);
     return data;

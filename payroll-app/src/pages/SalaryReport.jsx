@@ -6,12 +6,13 @@ const SalaryReport = ({ uploadedData }) => {
   // Company filtering removed as the app is for a single company
   const [availableMonths, setAvailableMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [paidEmployees, setPaidEmployees] = useState(() => {
-    // Load paid employees from localStorage
+    // Load paid employees from localStorage with month information
     const savedPaidEmployees = localStorage.getItem('paidEmployees');
-    return savedPaidEmployees ? JSON.parse(savedPaidEmployees) : [];
+    return savedPaidEmployees ? JSON.parse(savedPaidEmployees) : {};
   });
 
   // Generate months for the current year and set available months
@@ -92,7 +93,60 @@ const SalaryReport = ({ uploadedData }) => {
 
   // Convert uploaded data to salary reports format
   const convertToSalaryReports = (data) => {
-    if (!data || !data.companies) return [];
+    if (!data) return [];
+
+    // Check if we have monthly data structure
+    if (data.monthlyData && Object.keys(data.monthlyData).length > 0) {
+      const reports = [];
+
+      // Process each month's data
+      Object.entries(data.monthlyData).forEach(([month, monthData]) => {
+        if (monthData && monthData.companies) {
+          // Process this month's data and add to reports
+          monthData.companies.forEach(company => {
+            company.employees.forEach(emp => {
+              // Calculate regular pay (monthly salary)
+              const regularPay = emp.monthly_salary || emp.net_salary || 0;
+
+              // Only add employees with valid data
+              if (regularPay > 0 || emp.name) {
+                // Get the employee ID
+                let employeeId = emp.employee_id || '';
+
+                // Check if this employee is marked as paid for this specific month
+                const isPaid = paidEmployees[month] &&
+                              paidEmployees[month].includes(employeeId);
+
+                // Only include employees for the selected month, or all if no month is selected
+                if (!selectedMonth || selectedMonth === '' || month === selectedMonth) {
+                  reports.push({
+                    id: employeeId,
+                    name: emp.name || 'Unknown Employee',
+                    company: company.name,
+                    daily_salary: emp.daily_salary || emp.basic_rate || 0,
+                    attendance_days: typeof emp.attendance_days === 'number' ?
+                      emp.attendance_days : parseFloat(emp.attendance_days || 26),
+                    monthly_salary: emp.monthly_salary || emp.earned_wage || 0,
+                    vda: emp.vda || 0,
+                    total_b: emp.total_b || emp.gross_salary || 0,
+                    deduction_total: emp.deduction_total || 0,
+                    net_salary: emp.net_salary || emp.bank_transfer || 0,
+                    bank_transfer: emp.bank_transfer || emp.net_salary || 0,
+                    status: isPaid ? "Paid" : "Unpaid",
+                    month: month
+                  });
+                }
+              }
+            });
+          });
+        }
+      });
+
+      return reports;
+    }
+
+    // Fallback to old structure if no monthly data
+    if (!data.companies) return [];
 
     const reports = [];
 
@@ -109,6 +163,10 @@ const SalaryReport = ({ uploadedData }) => {
           // Get the employee's month (or use the company/data month, or 'Unknown')
           const employeeMonth = emp.month || company.month || data.month || 'Unknown';
 
+          // Check if this employee is marked as paid for this specific month
+          const isPaid = paidEmployees[employeeMonth] &&
+                        paidEmployees[employeeMonth].includes(employeeId);
+
           // Only include employees for the selected month, or all if no month is selected
           if (!selectedMonth || selectedMonth === '' || employeeMonth === selectedMonth) {
             reports.push({
@@ -124,7 +182,7 @@ const SalaryReport = ({ uploadedData }) => {
               deduction_total: emp.deduction_total || 0,
               net_salary: emp.net_salary || emp.bank_transfer || 0,
               bank_transfer: emp.bank_transfer || emp.net_salary || 0,
-              status: paidEmployees.includes(employeeId) ? "Paid" : "Unpaid",
+              status: isPaid ? "Paid" : "Unpaid",
               month: employeeMonth
             });
           }
@@ -137,7 +195,7 @@ const SalaryReport = ({ uploadedData }) => {
 
   const salaryReports = convertToSalaryReports(uploadedData);
 
-  // Filter reports based on search term, selected company, and selected month
+  // Filter reports based on search term, selected month, and payment status
   const filteredReports = salaryReports.filter(report => {
     const matchesSearch =
       report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,14 +205,34 @@ const SalaryReport = ({ uploadedData }) => {
 
     const matchesMonth = !selectedMonth || selectedMonth === '' || report.month === selectedMonth;
 
-    return matchesSearch && matchesMonth;
+    // Filter by payment status
+    const matchesStatus =
+      selectedStatus === 'All' ||
+      (selectedStatus === 'Paid' && report.status === 'Paid') ||
+      (selectedStatus === 'Unpaid' && report.status === 'Unpaid');
+
+    return matchesSearch && matchesMonth && matchesStatus;
   });
 
   const handlePaymentConfirm = () => {
     if (selectedEmployee) {
-      const updatedPaidEmployees = [...paidEmployees, selectedEmployee.id];
+      const month = selectedEmployee.month;
+
+      // Create a copy of the current paid employees object
+      const updatedPaidEmployees = { ...paidEmployees };
+
+      // Initialize the array for this month if it doesn't exist
+      if (!updatedPaidEmployees[month]) {
+        updatedPaidEmployees[month] = [];
+      }
+
+      // Add the employee ID to the array for this month if not already there
+      if (!updatedPaidEmployees[month].includes(selectedEmployee.id)) {
+        updatedPaidEmployees[month] = [...updatedPaidEmployees[month], selectedEmployee.id];
+      }
+
+      // Update state and localStorage
       setPaidEmployees(updatedPaidEmployees);
-      // Save to localStorage
       localStorage.setItem('paidEmployees', JSON.stringify(updatedPaidEmployees));
       setShowModal(false);
     }
@@ -163,6 +241,44 @@ const SalaryReport = ({ uploadedData }) => {
   const handleMarkAsPaid = (employee) => {
     setSelectedEmployee(employee);
     setShowModal(true);
+  };
+
+  // Function to mark all currently filtered employees as paid
+  const handleMarkAllAsPaid = () => {
+    if (!selectedMonth || filteredReports.length === 0) {
+      alert('Please select a month and ensure there are employees to mark as paid.');
+      return;
+    }
+
+    // Get all unpaid employees from the filtered list
+    const unpaidEmployees = filteredReports.filter(emp => emp.status === 'Unpaid');
+
+    if (unpaidEmployees.length === 0) {
+      alert('All employees for this month are already marked as paid.');
+      return;
+    }
+
+    // Create a copy of the current paid employees object
+    const updatedPaidEmployees = { ...paidEmployees };
+
+    // Initialize the array for this month if it doesn't exist
+    if (!updatedPaidEmployees[selectedMonth]) {
+      updatedPaidEmployees[selectedMonth] = [];
+    }
+
+    // Add all unpaid employee IDs to the array for this month
+    unpaidEmployees.forEach(emp => {
+      if (!updatedPaidEmployees[selectedMonth].includes(emp.id)) {
+        updatedPaidEmployees[selectedMonth].push(emp.id);
+      }
+    });
+
+    // Update state and localStorage
+    setPaidEmployees(updatedPaidEmployees);
+    localStorage.setItem('paidEmployees', JSON.stringify(updatedPaidEmployees));
+
+    // Show success message
+    alert(`Successfully marked ${unpaidEmployees.length} employees as paid for ${selectedMonth}.`);
   };
 
   return (
@@ -197,6 +313,23 @@ const SalaryReport = ({ uploadedData }) => {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <CheckCircle size={16} className="mr-2" />
+                Payment Status
+              </label>
+              <select
+                id="status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 w-full md:w-40 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="All">All Status</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex-grow md:max-w-md md:ml-auto">
@@ -217,7 +350,18 @@ const SalaryReport = ({ uploadedData }) => {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-3 mt-4">
+          <button
+            onClick={handleMarkAllAsPaid}
+            disabled={!selectedMonth || filteredReports.filter(r => r.status === 'Unpaid').length === 0}
+            className={`flex items-center px-4 py-2 rounded-md ${!selectedMonth || filteredReports.filter(r => r.status === 'Unpaid').length === 0
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+              : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'}`}
+          >
+            <CheckCircle size={18} className="mr-2" />
+            Mark All as Paid
+          </button>
+
           <button className="flex items-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
             <Download size={18} className="mr-2" />
             Export to Excel
@@ -286,8 +430,8 @@ const SalaryReport = ({ uploadedData }) => {
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         report.status === "Paid"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                       }`}>
                         {report.status}
                       </span>

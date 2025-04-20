@@ -271,8 +271,15 @@ const Settings = () => {
             <button
               onClick={() => {
                 if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+                  // Clear all application data
                   localStorage.removeItem('uploadedData');
+                  localStorage.removeItem('lastUploadMonth');
                   localStorage.removeItem('lastUploadTime');
+
+                  // Also clear payment status data
+                  localStorage.removeItem('paidEmployees');
+
+                  // Reload the page to reflect changes
                   window.location.reload();
                 }
               }}
@@ -293,7 +300,13 @@ const Settings = () => {
                 })
                 .then(response => response.json())
                 .then(data => {
-                  alert(data.message);
+                  // Also clear payment status data from localStorage
+                  localStorage.removeItem('paidEmployees');
+
+                  alert(data.message + ' Payment status data has also been cleared.');
+
+                  // Reload the page to reflect changes
+                  window.location.reload();
                 })
                 .catch(error => {
                   console.error('Error clearing data:', error);

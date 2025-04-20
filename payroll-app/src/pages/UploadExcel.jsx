@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { uploadExcelFile } from '../services/api';
 
-const UploadExcel = ({ setUploadedData }) => {
+const UploadExcel = ({ setUploadedData, updateMonthData }) => {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
@@ -29,6 +29,11 @@ const UploadExcel = ({ setUploadedData }) => {
         const monthIndex = (currentMonth + i) % 12;
         const year = currentYear + Math.floor((currentMonth + i) / 12);
         monthsList.push(`${monthNames[monthIndex]} ${year}`);
+      }
+
+      // Add March 2025 for testing (TEMPORARY - to be removed after testing)
+      if (!monthsList.includes('March 2025')) {
+        monthsList.push('March 2025');
       }
 
       setMonths(monthsList);
@@ -84,12 +89,11 @@ const UploadExcel = ({ setUploadedData }) => {
         });
       }
 
-      // Update state with the uploaded data
-      setUploadedData(data);
+      // Update state with the uploaded data for this specific month
+      updateMonthData(data, selectedMonth);
       setUploadStatus('success');
 
-      // Save to localStorage
-      localStorage.setItem('uploadedData', JSON.stringify(data));
+      // Save last upload info to localStorage
       localStorage.setItem('lastUploadTime', new Date().toISOString());
       localStorage.setItem('lastUploadMonth', selectedMonth);
 
