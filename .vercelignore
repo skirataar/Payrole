@@ -1,7 +1,0 @@
-.git
-node_modules
-backend/venv
-__pycache__
-*.pyc
-.env
-.env.local

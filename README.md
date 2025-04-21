@@ -27,9 +27,10 @@ Payroll Pro is an all-in-one payroll management solution designed for HR teams h
 - **Frontend**: React (Vite for fast dev builds)
 - **UI**: Tailwind CSS
 - **State Management**: React Hooks
-- **Backend**: Flask (Python)
+- **Backend**: FastAPI (Python)
 - **Data Handling**: Pandas for Excel and salary calculations
 - **Database**: SQLAlchemy ORM (SQL)
+- **Deployment**: Docker containerization for consistent environments
 
 ---
 
@@ -132,6 +133,8 @@ All attendance is treated as float values to ensure accurate payroll, including 
 - Subscription plan enforcement
 - Excel export feature
 - Admin panel integration
+- Codebase cleanup and optimization
+- Docker deployment support
 
 ### v1.1.0 (April 2025)
 - Dark mode support

@@ -1,0 +1,33 @@
+# Files to be removed for a cleaner codebase
+
+# Duplicate configuration files
+/home/skirataar/Payrole/postcss.config.cjs (duplicate of postcss.config.js)
+
+# Temporary deployment files that are no longer needed
+/home/skirataar/Payrole/conda-setup.sh (not needed after switching to Docker)
+/home/skirataar/Payrole/backend-build.sh (not needed after switching to Docker)
+/home/skirataar/Payrole/apt-packages.txt (not needed after switching to Docker)
+/home/skirataar/Payrole/.vercelignore (not needed after switching to Render)
+/home/skirataar/Payrole/Procfile (not needed after switching to Docker)
+
+# Duplicate API files
+/home/skirataar/Payrole/api/excel_processor.py (duplicate of backend/excel_processor.py)
+/home/skirataar/Payrole/api/upload_excel_by_position.py (functionality already in main.py)
+/home/skirataar/Payrole/api/index.py (functionality already in backend/main.py)
+/home/skirataar/Payrole/api/runtime.txt (not needed after switching to Docker)
+
+# Duplicate or unused backend files
+/home/skirataar/Payrole/backend/main_payroll.py (main.py is the primary file)
+/home/skirataar/Payrole/backend/payroll_api.py (functionality already in main.py)
+/home/skirataar/Payrole/backend/requirements.txt (root requirements.txt is used)
+/home/skirataar/Payrole/backend/requirements_payroll.txt (root requirements.txt is used)
+/home/skirataar/Payrole/backend/temp_excel_test-2.xlsx (test file, not needed in production)
+
+# Virtual environment (should not be in version control)
+/home/skirataar/Payrole/backend/venv/ (entire directory)
+
+# Sample data files
+/home/skirataar/Payrole/sample_data.txt (not needed in production)
+
+# Unused React components
+/home/skirataar/Payrole/src/AuthImplementation.jsx (not used in the application)
