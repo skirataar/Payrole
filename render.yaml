@@ -4,8 +4,8 @@ services:
     name: payroll-pro-api
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && python main.py
+    buildCommand: chmod +x ./conda-setup.sh && ./conda-setup.sh
+    startCommand: source ~/miniconda3/bin/activate payroll-env && cd backend && python main.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.16

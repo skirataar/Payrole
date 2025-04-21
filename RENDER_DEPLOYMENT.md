@@ -22,8 +22,8 @@ If the Blueprint deployment doesn't work, you can deploy each service manually:
 4. Configure the service:
    - **Name**: `payroll-pro-api`
    - **Environment**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `cd backend && python main.py`
+   - **Build Command**: `chmod +x ./conda-setup.sh && ./conda-setup.sh`
+   - **Start Command**: `source ~/miniconda3/bin/activate payroll-env && cd backend && python main.py`
    - **Plan**: Free
 5. Click "Create Web Service"
 6. Wait for the deployment to complete and note the URL (e.g., `https://payroll-pro-api.onrender.com`)
@@ -45,8 +45,9 @@ If the Blueprint deployment doesn't work, you can deploy each service manually:
 ### Backend Issues
 
 - Check the logs in the Render dashboard for any errors
-- Make sure the Python version is set to 3.9 or higher
-- Verify that all dependencies are correctly installed
+- The deployment uses Miniconda to create a Python environment with pre-built packages
+- This approach avoids the need to build packages like numpy from source
+- If you encounter issues with the Conda setup, you can try using a Docker-based deployment instead
 
 ### Frontend Issues
 
