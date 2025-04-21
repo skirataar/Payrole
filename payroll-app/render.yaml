@@ -1,27 +1,20 @@
 services:
-  # Backend API service
+  # Combined service for both frontend and backend
   - type: web
-    name: payroll-pro-api
+    name: payroll-pro
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python backend/main.py
+    buildCommand: chmod +x ./build.sh && ./build.sh
+    startCommand: cd backend && python main.py
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
-    
-  # Frontend web service
-  - type: web
-    name: payroll-pro-web
-    env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+        value: 3.9.16
+      - key: NODE_VERSION
+        value: 18.12.0
     routes:
       - type: rewrite
+        source: /api/*
+        destination: /api/$1
+      - type: rewrite
         source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          name: payroll-pro-api
-          type: web
-          property: url
+        destination: /dist/index.html
+    staticPublishPath: ./dist

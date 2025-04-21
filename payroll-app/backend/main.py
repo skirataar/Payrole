@@ -1,9 +1,9 @@
-from fastapi import FastAPI, UploadFile, HTTPException, Form
+from fastapi import FastAPI, UploadFile, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
-from typing import List, Dict, Optional, Tuple, Any
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from typing import List, Dict, Optional
 import pandas as pd
-import numpy as np
 import io
 import os
 import json
@@ -33,8 +33,20 @@ class DataStore:
 
 data_store = DataStore()
 
-@app.get("/")
-async def root():
+# Mount static files
+try:
+    # Check if the dist directory exists (for production)
+    if os.path.exists('../dist'):
+        app.mount("/", StaticFiles(directory="../dist", html=True), name="static")
+    # For local development, check if the dist directory exists in the current directory
+    elif os.path.exists('./dist'):
+        app.mount("/", StaticFiles(directory="./dist", html=True), name="static")
+    print("Static files mounted successfully")
+except Exception as e:
+    print(f"Error mounting static files: {str(e)}")
+
+@app.get("/api")
+async def api_root():
     """Root endpoint providing API information"""
     return JSONResponse({
         "message": "Welcome to Payroll Management API",

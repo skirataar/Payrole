@@ -1,5 +1,5 @@
 // Get API URL from environment variable or use default
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Helper function to get the correct API URL
 const getApiUrl = (endpoint) => {
