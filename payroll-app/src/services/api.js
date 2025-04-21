@@ -1,9 +1,20 @@
-const API_BASE_URL = 'http://localhost:5000';
+// Use relative URL in production, fallback to localhost for development
+const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+
+// For Vercel deployment, we need to use the /api prefix
+const getApiUrl = (endpoint) => {
+  // If we're in production and the endpoint doesn't start with /api, add it
+  if (process.env.NODE_ENV === 'production' && !endpoint.startsWith('/api')) {
+    return `/api${endpoint}`;
+  }
+  return endpoint;
+};
 
 export const clearDatabase = async () => {
   try {
     console.log('Clearing database...');
-    const response = await fetch(`${API_BASE_URL}/api/clear-data`, {
+    const endpoint = getApiUrl('/api/clear-data');
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
     });
 
@@ -56,7 +67,7 @@ export const uploadExcelFile = async (file, month = null) => {
 
   try {
     // Use the endpoint that creates a log file
-    const endpoint = '/api/upload_excel_by_position';
+    const endpoint = getApiUrl('/api/upload_excel_by_position');
     console.log('Uploading file to endpoint:', endpoint);
     console.log('File being uploaded:', file.name, 'Size:', file.size, 'bytes');
 
@@ -102,9 +113,10 @@ export const uploadExcelFile = async (file, month = null) => {
 
 export const getEmployees = async (companyId = null) => {
   try {
+    const endpoint = getApiUrl('/api/employees');
     const url = companyId
-      ? `${API_BASE_URL}/api/employees?company_id=${encodeURIComponent(companyId)}`
-      : `${API_BASE_URL}/api/employees`;
+      ? `${API_BASE_URL}${endpoint}?company_id=${encodeURIComponent(companyId)}`
+      : `${API_BASE_URL}${endpoint}`;
 
     const response = await fetch(url);
 
@@ -122,7 +134,8 @@ export const getEmployees = async (companyId = null) => {
 
 export const getCompanies = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/companies`);
+    const endpoint = getApiUrl('/api/companies');
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
 
     if (!response.ok) {
       const errorData = await response.json();
