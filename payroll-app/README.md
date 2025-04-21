@@ -106,6 +106,7 @@ The system implements the following calculation logic:
 
 ## Recent Updates
 
+<<<<<<< HEAD
 ### Version 1.2.0 (May 2024)
 
 - **Multi-Company Support**: Added support for multiple company accounts with separate data storage
@@ -117,11 +118,15 @@ The system implements the following calculation logic:
 - **Admin Dashboard**: Added admin interface to manage company accounts and subscriptions
 
 ### Version 1.1.0 (June 2023)
+=======
+### Version 1.1.0 (April 2025)
+>>>>>>> a83234903a5f47dc89a777c9cff7405f2094f5c3
 
 - **Dark Mode Implementation**: Added support for dark mode across all pages for better viewing in low-light environments
 - **Single Company Focus**: Streamlined the interface to focus on a single company's payroll management
 - **UI Improvements**: Enhanced spacing and alignment in the filter sections
 - **Persistence Enhancements**: Added localStorage support for "Mark as Paid" status to persist across page refreshes
+- **Minor Bug Fixes**: Fixed a few technical glitches.
 
 ## License
 
