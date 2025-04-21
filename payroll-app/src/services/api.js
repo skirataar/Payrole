@@ -1,13 +1,16 @@
-// Use relative URL in production, fallback to localhost for development
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+// Get API URL from environment variable or use default
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// For Vercel deployment, we need to use the /api prefix
+// Helper function to get the correct API URL
 const getApiUrl = (endpoint) => {
-  // If we're in production and the endpoint doesn't start with /api, add it
-  if (process.env.NODE_ENV === 'production' && !endpoint.startsWith('/api')) {
-    return `/api${endpoint}`;
+  // If the endpoint already starts with http, return it as is
+  if (endpoint.startsWith('http')) {
+    return endpoint;
   }
-  return endpoint;
+
+  // Make sure the endpoint starts with a slash
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return formattedEndpoint;
 };
 
 export const clearDatabase = async () => {
