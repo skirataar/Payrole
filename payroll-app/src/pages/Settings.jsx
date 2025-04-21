@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
-import { Save, AlertCircle, Moon, Sun } from 'lucide-react';
+import { Save, AlertCircle, Moon, Sun, Trash2, Database, RefreshCw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
 
 const Settings = () => {
   const { darkMode, toggleDarkMode } = useTheme();
+  const { user } = useAuth();
+  const { setUploadedData } = useCompany();
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
 
   const [settings, setSettings] = useState({
     vdaRate: 135.32,
@@ -270,57 +277,92 @@ const Settings = () => {
           <div>
             <button
               onClick={() => {
-                if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-                  // Clear all application data
-                  localStorage.removeItem('uploadedData');
-                  localStorage.removeItem('lastUploadMonth');
-                  localStorage.removeItem('lastUploadTime');
+                if (confirm('Are you sure you want to clear salary report data? This will reset all "paid" statuses.')) {
+                  // Get company ID for clearing data
+                  const companyId = user?.companyId || 'default';
 
-                  // Also clear payment status data
+                  // Clear only the paid employees data for this company
+                  localStorage.removeItem(`paidEmployees_${companyId}`);
+
+                  // Also clear default key for backward compatibility
                   localStorage.removeItem('paidEmployees');
 
-                  // Reload the page to reflect changes
-                  window.location.reload();
+                  alert('Salary report data has been cleared successfully.');
                 }
               }}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+              className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800"
             >
-              Clear All Data
+              <RefreshCw size={18} className="mr-2" />
+              Reset Salary Payment Status
             </button>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              This will remove all uploaded data from the application. This action cannot be undone.
+              This will reset all payment statuses in the salary report. All employees will be marked as "Unpaid".
             </p>
           </div>
 
           <div>
             <button
               onClick={() => {
-                fetch('http://localhost:5000/api/clear-data', {
-                  method: 'DELETE',
-                })
-                .then(response => response.json())
-                .then(data => {
-                  // Also clear payment status data from localStorage
+                if (confirm('Are you sure you want to clear all uploaded data? This will remove all salary data but keep your account.')) {
+                  // Get company ID for clearing data
+                  const companyId = user?.companyId || 'default';
+
+                  // Clear company-specific data
+                  localStorage.removeItem(`uploadedData_${companyId}`);
+                  localStorage.removeItem(`lastUploadMonth_${companyId}`);
+                  localStorage.removeItem(`lastUploadTime_${companyId}`);
+                  localStorage.removeItem(`paidEmployees_${companyId}`);
+
+                  // Also clear default data for backward compatibility
+                  localStorage.removeItem('uploadedData');
+                  localStorage.removeItem('lastUploadMonth');
+                  localStorage.removeItem('lastUploadTime');
                   localStorage.removeItem('paidEmployees');
 
-                  alert(data.message + ' Payment status data has also been cleared.');
+                  // Reset the uploaded data in the context
+                  setUploadedData({ monthlyData: {}, companies: [] });
 
-                  // Reload the page to reflect changes
-                  window.location.reload();
-                })
-                .catch(error => {
-                  console.error('Error clearing data:', error);
-                  alert('Failed to clear data from the server');
-                });
+                  alert('All uploaded data has been cleared successfully.');
+                }
               }}
-              className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800"
+              className="flex items-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
             >
-              Clear Server Data
+              <Trash2 size={18} className="mr-2" />
+              Clear All Uploaded Data
             </button>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              This will remove all data from the server. You will need to upload your Excel file again.
+              This will remove all uploaded salary data from the application. Your account will remain intact.
             </p>
           </div>
+
+          {isAdmin && (
+            <div>
+              <button
+                onClick={() => {
+                  if (confirm('Are you sure you want to clear server data? This action cannot be undone.')) {
+                    fetch('http://localhost:5000/api/clear-data', {
+                      method: 'DELETE',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                      alert(data.message);
+                    })
+                    .catch(error => {
+                      console.error('Error clearing data:', error);
+                      alert('Failed to clear data from the server');
+                    });
+                  }
+                }}
+                className="flex items-center bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800"
+              >
+                <Database size={18} className="mr-2" />
+                Clear Server Data (Admin Only)
+              </button>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                This will remove all data from the server. Only administrators can perform this action.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

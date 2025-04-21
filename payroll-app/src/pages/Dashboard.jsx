@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, ArrowUp, ArrowDown, Users, DollarSign, Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
+import { useNavigate } from 'react-router-dom';
 
-const Dashboard = ({ uploadedData, setUploadedData }) => {
+const Dashboard = () => {
+  // Get company data from company context
+  const { uploadedData } = useCompany();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Use the uploaded data from the company context
+  const effectiveData = uploadedData;
+
+  // For debugging
+  useEffect(() => {
+    console.log('Dashboard - User:', user);
+    console.log('Dashboard - Uploaded Data:', uploadedData);
+  }, [user, uploadedData]);
   // State to store previous month's data for comparison
   const [prevMonthData, setPrevMonthData] = useState({
     totalEmployees: 0,
@@ -29,112 +45,49 @@ const Dashboard = ({ uploadedData, setUploadedData }) => {
   };
 
   // Calculate summary data for current month
-  const totalEmployees = uploadedData?.companies?.reduce((sum, company) =>
+  const totalEmployees = effectiveData?.companies?.reduce((sum, company) =>
     sum + company.employees.length, 0) || 0;
 
-  const totalSalary = uploadedData?.companies?.reduce((sum, company) =>
+  const totalSalary = effectiveData?.companies?.reduce((sum, company) =>
     sum + company.summary.total_salary, 0) || 0;
 
   const avgSalary = totalEmployees ? Math.round(totalSalary / totalEmployees) : 0;
 
-  const recentEmployees = uploadedData?.companies?.flatMap(company =>
+  const recentEmployees = effectiveData?.companies?.flatMap(company =>
     company.employees.slice(0, 5).map(emp => ({...emp, company: company.name}))
   )?.slice(0, 5) || [];
 
-  // Helper function to add test data for March 2025 (TEMPORARY - to be removed after testing)
-  const addTestDataForMarch = () => {
-    // Check if we already have April data (current month) but no March data
-    const { currentMonth, prevMonth } = getCurrentAndPrevMonth();
 
-    if (uploadedData?.monthlyData &&
-        uploadedData.monthlyData[currentMonth] &&
-        !uploadedData.monthlyData['March 2025'] &&
-        window.location.search.includes('test=true')) {
-
-      console.log('Adding test data for March 2025');
-
-      // Create a copy of the current data
-      const newData = { ...uploadedData };
-
-      // Create March data with slightly different values for testing percentage changes
-      const marchData = JSON.parse(JSON.stringify(uploadedData.monthlyData[currentMonth]));
-
-      // Modify employee count and salaries to test percentage changes
-      if (marchData && marchData.companies) {
-        // Remove some employees to show an increase in April
-        marchData.companies.forEach(company => {
-          if (company.employees.length > 3) {
-            // Remove approximately 10% of employees
-            const removeCount = Math.max(1, Math.floor(company.employees.length * 0.1));
-            company.employees = company.employees.slice(0, company.employees.length - removeCount);
-          }
-
-          // Reduce salaries by about 5%
-          company.employees.forEach(emp => {
-            emp.net_salary = Math.round(emp.net_salary * 0.95);
-            emp.monthly_salary = Math.round(emp.monthly_salary * 0.95);
-            emp.month = 'March 2025';
-          });
-
-          // Update company summary
-          company.summary.total_salary = company.employees.reduce((sum, emp) => sum + emp.net_salary, 0);
-        });
-
-        // Update total summary
-        marchData.summary = {
-          total_companies: marchData.companies.length,
-          total_employees: marchData.companies.reduce((sum, company) => sum + company.employees.length, 0),
-          total_salary: marchData.companies.reduce((sum, company) => sum + company.summary.total_salary, 0),
-          total_overtime_hours: 0
-        };
-      }
-
-      // Add March data to the monthlyData
-      newData.monthlyData['March 2025'] = marchData;
-
-      // Update the state (but don't save to localStorage to avoid persisting test data)
-      setUploadedData(newData);
-      return true;
-    }
-    return false;
-  };
 
   // Calculate percentage changes when data changes
   useEffect(() => {
-    // Try to add test data for March 2025
-    const addedTestData = addTestDataForMarch();
-
     // Get current and previous month
     const { currentMonth, prevMonth } = getCurrentAndPrevMonth();
 
-    // For testing, use March 2025 as the previous month if available
-    const testPrevMonth = 'March 2025';
-
     // Debug information
-    console.log('Available months:', uploadedData?.monthlyData ? Object.keys(uploadedData.monthlyData) : 'No monthly data');
+    console.log('Available months:', effectiveData?.monthlyData ? Object.keys(effectiveData.monthlyData) : 'No monthly data');
     console.log('Current month:', currentMonth);
     console.log('Previous month:', prevMonth);
-    console.log('Test month:', testPrevMonth);
 
     // Check if we have monthly data structure
-    if (uploadedData?.monthlyData && Object.keys(uploadedData.monthlyData).length > 0) {
+    if (effectiveData?.monthlyData && Object.keys(effectiveData.monthlyData).length > 0) {
       // Find the most recent month in the data (might not be the current month)
-      const availableMonths = Object.keys(uploadedData.monthlyData);
-
-      // If we have both March and April data, use them for comparison
-      const hasCurrentMonth = availableMonths.includes(currentMonth);
-      const hasTestPrevMonth = availableMonths.includes(testPrevMonth);
+      const availableMonths = Object.keys(effectiveData.monthlyData);
 
       // Determine which months to compare
       let currentMonthData, prevMonthData;
       let currentMonthName, prevMonthName;
 
-      if (hasCurrentMonth && hasTestPrevMonth) {
-        // We have both months - use them for comparison
-        currentMonthData = uploadedData.monthlyData[currentMonth];
-        prevMonthData = uploadedData.monthlyData[testPrevMonth];
+      // Check if we have the current month in our data
+      const hasCurrentMonth = availableMonths.includes(currentMonth);
+      const hasPrevMonth = availableMonths.includes(prevMonth);
+
+      if (hasCurrentMonth && hasPrevMonth) {
+        // We have both the current month and previous month - use them for comparison
+        currentMonthData = effectiveData.monthlyData[currentMonth];
+        prevMonthData = effectiveData.monthlyData[prevMonth];
         currentMonthName = currentMonth;
-        prevMonthName = testPrevMonth;
+        prevMonthName = prevMonth;
       } else if (availableMonths.length >= 2) {
         // We have at least 2 months - sort them and use the latest two
         const sortedMonths = [...availableMonths].sort((a, b) => {
@@ -155,8 +108,8 @@ const Dashboard = ({ uploadedData, setUploadedData }) => {
         // Use the two most recent months
         currentMonthName = sortedMonths[sortedMonths.length - 1];
         prevMonthName = sortedMonths[sortedMonths.length - 2];
-        currentMonthData = uploadedData.monthlyData[currentMonthName];
-        prevMonthData = uploadedData.monthlyData[prevMonthName];
+        currentMonthData = effectiveData.monthlyData[currentMonthName];
+        prevMonthData = effectiveData.monthlyData[prevMonthName];
       } else if (availableMonths.length === 1) {
         // Only one month available - can't calculate changes
         console.log('Only one month available - cannot calculate changes');
@@ -238,10 +191,10 @@ const Dashboard = ({ uploadedData, setUploadedData }) => {
       console.log('No monthly data structure - using mock data');
       setPercentChanges({ employees: 4.0, salary: 2.5, avgSalary: -1.2 });
     }
-  }, [uploadedData, totalEmployees, totalSalary, avgSalary]);
+  }, [effectiveData, totalEmployees, totalSalary, avgSalary]);
 
   return (
-    <div className="p-6 dark:bg-gray-900 dark:text-white">
+    <div className="dark:bg-gray-900 dark:text-white">
       <h1 className="text-2xl font-bold mb-8 flex items-center">
         <BarChart3 size={24} className="text-blue-600 dark:text-blue-400 mr-2" />
         Dashboard Overview
@@ -351,7 +304,12 @@ const Dashboard = ({ uploadedData, setUploadedData }) => {
             <Users size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
             Recent Employees
           </h2>
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">View All</button>
+          <button
+            onClick={() => navigate('/salary-report')}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center"
+          >
+            View All Employees
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

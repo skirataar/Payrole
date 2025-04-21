@@ -2,13 +2,7 @@
 
 ## Overview
 
-Payroll Pro is a comprehensive solution designed to streamline and automate the payroll process for your company. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
-=======
-# Payroll Management System
-
-## Overview
-
-The Payroll Management System is a comprehensive solution designed to streamline and automate the payroll process for employees. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports.
+Payroll Pro is a comprehensive solution designed to streamline and automate the payroll process for multiple companies. This application allows HR administrators to upload employee attendance data from Excel files, process salary calculations, and generate detailed payroll reports. With multi-company support and subscription-based access, Payroll Pro provides a secure and scalable solution for all your payroll management needs.
 
 
 ## Features
@@ -18,6 +12,11 @@ The Payroll Management System is a comprehensive solution designed to streamline
 - **Interactive Dashboard**: View key metrics and recent employee data at a glance
 - **Detailed Salary Reports**: Generate comprehensive salary reports with filtering and sorting capabilities
 - **Payment Tracking**: Mark employees as paid and track payment status
+- **Excel Export**: Export salary reports to Excel files for offline use
+- **Multi-Company Support**: Separate accounts for different companies with isolated data
+- **User Authentication**: Secure login and registration system with role-based access control
+- **Subscription Management**: Different subscription plans with expiration tracking
+- **Admin Dashboard**: Manage company accounts, view analytics, and monitor subscriptions
 - **Configurable Settings**: Customize calculation parameters such as VDA rates, ESI percentages, and PF contributions
 - **Dark Mode Support**: Toggle between light and dark themes for comfortable viewing in any environment
 
@@ -83,13 +82,39 @@ The system implements the following calculation logic:
 
 ## Usage
 
-1. **Dashboard**: View key metrics and recent employee data
-2. **Upload Excel**: Upload employee attendance data from Excel files
-3. **Salary Report**: View detailed salary reports with filtering and sorting options
-4. **Settings**: Configure calculation parameters and system settings
-   - Toggle dark mode using the switch in the settings page for comfortable viewing in low-light environments
+### Company Users
+
+1. **Login/Register**: Create a new company account or log in with existing credentials
+2. **Choose Subscription**: Select a subscription plan during registration (Basic, Standard, or Premium)
+3. **Dashboard**: View key metrics and recent employee data with interactive charts
+4. **Upload Excel**: Upload employee attendance data from Excel files with month selection
+5. **Salary Report**: View detailed salary reports with filtering, sorting, and export options
+   - Mark employees as paid individually or in bulk
+   - Export salary data to Excel files for offline use
+   - Filter by payment status (Paid/Unpaid)
+6. **Settings**: Configure application settings and manage data
+   - Toggle dark mode for comfortable viewing in low-light environments
+   - Reset salary payment status without affecting account data
+   - Clear uploaded data while preserving account information
+
+### Admin Users
+
+1. **Admin Dashboard**: View all registered companies and their subscription status
+2. **Subscription Management**: Monitor and update company subscription plans
+3. **Analytics**: View system-wide usage statistics and metrics
+4. **Admin Settings**: Configure global system parameters
 
 ## Recent Updates
+
+### Version 1.2.0 (May 2024)
+
+- **Multi-Company Support**: Added support for multiple company accounts with separate data storage
+- **User Authentication**: Implemented user registration and login system with role-based access control
+- **Subscription Management**: Added subscription plans with expiration dates and renewal prompts
+- **Excel Export**: Added ability to export salary reports to Excel files
+- **Data Isolation**: Ensured each company can only access their own data
+- **Subscription Enforcement**: Restricted application access for users with expired subscriptions
+- **Admin Dashboard**: Added admin interface to manage company accounts and subscriptions
 
 ### Version 1.1.0 (June 2023)
 

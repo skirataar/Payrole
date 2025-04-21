@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { uploadExcelFile } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
 
-const UploadExcel = ({ setUploadedData, updateMonthData }) => {
+const UploadExcel = () => {
+  const { user } = useAuth();
+  const { updateMonthData } = useCompany();
+
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
   const [error, setError] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [months, setMonths] = useState([]);
+
+  // Get company ID for storing data
+  const companyId = user?.companyId || 'default';
+
+  // For debugging
+  useEffect(() => {
+    console.log('UploadExcel - User:', user);
+    console.log('UploadExcel - Company ID:', companyId);
+  }, [user, companyId]);
 
   // Generate months for the dropdown (current month and 11 months ahead)
   useEffect(() => {
@@ -29,11 +43,6 @@ const UploadExcel = ({ setUploadedData, updateMonthData }) => {
         const monthIndex = (currentMonth + i) % 12;
         const year = currentYear + Math.floor((currentMonth + i) / 12);
         monthsList.push(`${monthNames[monthIndex]} ${year}`);
-      }
-
-      // Add March 2025 for testing (TEMPORARY - to be removed after testing)
-      if (!monthsList.includes('March 2025')) {
-        monthsList.push('March 2025');
       }
 
       setMonths(monthsList);
@@ -93,9 +102,15 @@ const UploadExcel = ({ setUploadedData, updateMonthData }) => {
       updateMonthData(data, selectedMonth);
       setUploadStatus('success');
 
-      // Save last upload info to localStorage
+      // Save last upload info to localStorage with company ID
+      localStorage.setItem(`lastUploadTime_${companyId}`, new Date().toISOString());
+      localStorage.setItem(`lastUploadMonth_${companyId}`, selectedMonth);
+
+      // Also save to the default key for backward compatibility
       localStorage.setItem('lastUploadTime', new Date().toISOString());
       localStorage.setItem('lastUploadMonth', selectedMonth);
+
+      console.log(`Data saved for company ID: ${companyId}, month: ${selectedMonth}`);
 
       // Show success message
       alert(`File uploaded successfully for ${selectedMonth}! ${data.companies?.length || 0} companies and ${data.summary?.total_employees || 0} employees processed.`);

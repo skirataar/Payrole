@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import SubscriptionAlert from './SubscriptionAlert';
+import SubscriptionGate from './SubscriptionGate';
 import {
   Menu, X, BarChart3, Upload, FileText, Settings,
   Bell, User, ChevronDown, LogOut, HelpCircle, UserCog,
@@ -11,11 +14,18 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
+  const { user, logout, loading } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   // Navigation items
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={20} />, path: '/' },
+    { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={20} />, path: '/dashboard' },
     { id: 'upload', label: 'Upload Excel', icon: <Upload size={20} />, path: '/upload' },
     { id: 'salary-report', label: 'Salary Report', icon: <FileText size={20} />, path: '/salary-report' }
   ];
@@ -34,10 +44,18 @@ const Layout = ({ children }) => {
     };
   }, [showUserMenu]);
 
+  // Check if user is logged in
+  useEffect(() => {
+    // Only redirect if we're sure the user isn't logged in (not during initial loading)
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
+
   // Get current page from location
   const getCurrentPage = () => {
     const path = location.pathname;
-    if (path === '/') return 'dashboard';
+    if (path === '/dashboard') return 'dashboard';
     if (path === '/upload') return 'upload';
     if (path === '/salary-report') return 'salary-report';
     if (path === '/settings') return 'settings';
@@ -47,7 +65,8 @@ const Layout = ({ children }) => {
   const currentPage = getCurrentPage();
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <SubscriptionGate>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
       {/* Sidebar for desktop */}
       <aside
         className={`bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 left-0 z-30 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
@@ -139,8 +158,8 @@ const Layout = ({ children }) => {
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
                   <div className="px-4 py-2 border-b dark:border-gray-700">
-                    <p className="text-sm font-medium dark:text-white">Admin User</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">admin@payrollpro.com</p>
+                    <p className="text-sm font-medium dark:text-white">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'user@example.com'}</p>
                   </div>
                   <Link
                     to="/settings"
@@ -158,14 +177,16 @@ const Layout = ({ children }) => {
                     <HelpCircle size={16} className="mr-2" />
                     Help & Support
                   </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                    onClick={() => setShowUserMenu(false)}
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleLogout();
+                    }}
                   >
                     <LogOut size={16} className="mr-2" />
                     Sign Out
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -181,11 +202,15 @@ const Layout = ({ children }) => {
         )}
 
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
+          {/* Subscription alert */}
+          <SubscriptionAlert />
+
           {children}
         </main>
       </div>
     </div>
+    </SubscriptionGate>
   );
 };
 

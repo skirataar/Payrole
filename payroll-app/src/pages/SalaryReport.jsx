@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Filter, CheckCircle, Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
+import * as XLSX from 'xlsx';
 
-const SalaryReport = ({ uploadedData }) => {
+const SalaryReport = () => {
+  const { user } = useAuth();
+  const { uploadedData } = useCompany();
+
   const [searchTerm, setSearchTerm] = useState('');
-  // Company filtering removed as the app is for a single company
   const [availableMonths, setAvailableMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [paidEmployees, setPaidEmployees] = useState(() => {
-    // Load paid employees from localStorage with month information
-    const savedPaidEmployees = localStorage.getItem('paidEmployees');
-    return savedPaidEmployees ? JSON.parse(savedPaidEmployees) : {};
-  });
+
+  // Use the uploaded data from the company context
+  const effectiveData = uploadedData;
+
+  // Get company ID for storing paid employees data
+  const companyId = user?.companyId || 'default';
+
+  // For debugging
+  useEffect(() => {
+    console.log('SalaryReport - User:', user);
+    console.log('SalaryReport - Company ID:', companyId);
+    console.log('SalaryReport - Uploaded Data:', uploadedData);
+  }, [user, companyId, uploadedData]);
+
+  const [paidEmployees, setPaidEmployees] = useState({});
 
   // Generate months for the current year and set available months
   useEffect(() => {
@@ -32,14 +47,14 @@ const SalaryReport = ({ uploadedData }) => {
       // Also check if we have data with month information
       const dataMonths = new Set();
 
-      if (uploadedData && uploadedData.companies) {
-        // Check if the uploadedData has a month property
-        if (uploadedData.month) {
-          dataMonths.add(uploadedData.month);
+      if (effectiveData && effectiveData.companies) {
+        // Check if the effectiveData has a month property
+        if (effectiveData.month) {
+          dataMonths.add(effectiveData.month);
         }
 
         // Check each company's employees for month information
-        uploadedData.companies.forEach(company => {
+        effectiveData.companies.forEach(company => {
           if (company.employees) {
             company.employees.forEach(employee => {
               if (employee.month) {
@@ -65,9 +80,9 @@ const SalaryReport = ({ uploadedData }) => {
 
     // Set default selected month
     if (months.length > 0) {
-      // Try to get the month from localStorage or uploadedData
-      const lastUploadMonth = localStorage.getItem('lastUploadMonth');
-      const dataMonth = uploadedData?.month;
+      // Try to get the month from localStorage or effectiveData
+      const lastUploadMonth = localStorage.getItem(`lastUploadMonth_${companyId}`);
+      const dataMonth = effectiveData?.month;
 
       if (lastUploadMonth && months.includes(lastUploadMonth)) {
         setSelectedMonth(lastUploadMonth);
@@ -87,11 +102,26 @@ const SalaryReport = ({ uploadedData }) => {
         }
       }
     }
-  }, [uploadedData]);
+  }, [effectiveData, companyId]);
 
-  // Company filtering removed as the app is for a single company
+  // Update paidEmployees when companyId changes
+  useEffect(() => {
+    if (companyId) {
+      console.log(`Loading paid employees data for company: ${companyId}`);
+      // Load paid employees from localStorage with company and month information
+      const savedPaidEmployees = localStorage.getItem(`paidEmployees_${companyId}`);
+      if (savedPaidEmployees) {
+        const parsedData = JSON.parse(savedPaidEmployees);
+        console.log('Loaded paid employees data:', parsedData);
+        setPaidEmployees(parsedData);
+      } else {
+        console.log('No paid employees data found for this company');
+        setPaidEmployees({});
+      }
+    }
+  }, [companyId]);
 
-  // Convert uploaded data to salary reports format
+  // Convert data to salary reports format
   const convertToSalaryReports = (data) => {
     if (!data) return [];
 
@@ -110,8 +140,8 @@ const SalaryReport = ({ uploadedData }) => {
 
               // Only add employees with valid data
               if (regularPay > 0 || emp.name) {
-                // Get the employee ID
-                let employeeId = emp.employee_id || '';
+                // Get the employee ID - ensure it's not empty
+                let employeeId = emp.employee_id || emp.id || '';
 
                 // Check if this employee is marked as paid for this specific month
                 const isPaid = paidEmployees[month] &&
@@ -157,8 +187,8 @@ const SalaryReport = ({ uploadedData }) => {
 
         // Only add employees with valid data
         if (regularPay > 0 || emp.name) {
-          // Get the employee ID
-          let employeeId = emp.employee_id || '';
+          // Get the employee ID - ensure it's not empty
+          let employeeId = emp.employee_id || emp.id || '';
 
           // Get the employee's month (or use the company/data month, or 'Unknown')
           const employeeMonth = emp.month || company.month || data.month || 'Unknown';
@@ -193,7 +223,7 @@ const SalaryReport = ({ uploadedData }) => {
     return reports;
   };
 
-  const salaryReports = convertToSalaryReports(uploadedData);
+  const salaryReports = convertToSalaryReports(effectiveData);
 
   // Filter reports based on search term, selected month, and payment status
   const filteredReports = salaryReports.filter(report => {
@@ -231,9 +261,12 @@ const SalaryReport = ({ uploadedData }) => {
         updatedPaidEmployees[month] = [...updatedPaidEmployees[month], selectedEmployee.id];
       }
 
-      // Update state and localStorage
+      // Update state and localStorage with company-specific data
+      console.log(`Marking employee ${selectedEmployee.id} as paid for month ${month}`);
+      console.log('Updated paid employees data:', updatedPaidEmployees);
+
       setPaidEmployees(updatedPaidEmployees);
-      localStorage.setItem('paidEmployees', JSON.stringify(updatedPaidEmployees));
+      localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
       setShowModal(false);
     }
   };
@@ -241,6 +274,48 @@ const SalaryReport = ({ uploadedData }) => {
   const handleMarkAsPaid = (employee) => {
     setSelectedEmployee(employee);
     setShowModal(true);
+  };
+
+  // Function to export salary data to Excel
+  const handleExportToExcel = () => {
+    // Check if we have data to export
+    if (filteredReports.length === 0) {
+      alert('No data to export. Please upload salary data first.');
+      return;
+    }
+
+    // Prepare data for export
+    const exportData = filteredReports.map(report => ({
+      'Employee ID': report.id,
+      'Name': report.name,
+      'Month': report.month || 'Unknown',
+      'Daily Rate (₹)': report.daily_salary,
+      'Attendance Days': report.attendance_days,
+      'Monthly Salary (₹)': report.monthly_salary,
+      'VDA (₹)': report.vda,
+      'Total-B (₹)': report.total_b,
+      'Deductions (₹)': report.deduction_total,
+      'Net Salary (₹)': report.net_salary,
+      'Status': report.status
+    }));
+
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Salary Report');
+
+    // Generate filename with current date
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const fileName = `Salary_Report_${selectedMonth ? selectedMonth.replace(' ', '_') : dateStr}.xlsx`;
+
+    // Save the file
+    XLSX.writeFile(wb, fileName);
+
+    // Show success message
+    alert(`Salary report exported successfully as ${fileName}`);
   };
 
   // Function to mark all currently filtered employees as paid
@@ -273,9 +348,12 @@ const SalaryReport = ({ uploadedData }) => {
       }
     });
 
-    // Update state and localStorage
+    // Update state and localStorage with company-specific data
+    console.log(`Marking ${unpaidEmployees.length} employees as paid for month ${selectedMonth}`);
+    console.log('Updated paid employees data:', updatedPaidEmployees);
+
     setPaidEmployees(updatedPaidEmployees);
-    localStorage.setItem('paidEmployees', JSON.stringify(updatedPaidEmployees));
+    localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
 
     // Show success message
     alert(`Successfully marked ${unpaidEmployees.length} employees as paid for ${selectedMonth}.`);
@@ -362,7 +440,13 @@ const SalaryReport = ({ uploadedData }) => {
             Mark All as Paid
           </button>
 
-          <button className="flex items-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
+          <button
+            onClick={handleExportToExcel}
+            disabled={filteredReports.length === 0}
+            className={`flex items-center px-4 py-2 rounded-md ${filteredReports.length === 0
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+              : 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800'}`}
+          >
             <Download size={18} className="mr-2" />
             Export to Excel
           </button>
