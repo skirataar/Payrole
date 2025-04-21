@@ -2,12 +2,104 @@ from flask import Flask, request, jsonify
 from http.server import BaseHTTPRequestHandler
 import json
 import pandas as pd
-import numpy as np
 import io
 
-# Import the excel processor module directly from the api directory
-# We've copied the file from backend to api for Vercel deployment
-import excel_processor
+# Simple excel processor for Vercel deployment
+class excel_processor:
+    @staticmethod
+    def process_excel_file_by_position(excel_file, mappings):
+        try:
+            # Process the Excel file
+            processed_data = {
+                "companies": [],
+                "summary": {
+                    "total_companies": 0,
+                    "total_employees": 0,
+                    "total_salary": 0,
+                    "total_overtime_hours": 0
+                }
+            }
+
+            # Process each sheet
+            for sheet_name in excel_file.sheet_names:
+                try:
+                    # Read the sheet
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+
+                    # Skip empty sheets
+                    if df.empty:
+                        continue
+
+                    # Extract employee data
+                    employees = []
+                    for idx, row in df.iterrows():
+                        # Skip header rows and empty rows
+                        if idx < 2 or row.isna().all():
+                            continue
+
+                        # Get column mappings
+                        company_mapping = mappings.get(sheet_name, mappings.get('default', {}))
+
+                        # Extract employee data
+                        try:
+                            # Get employee ID and name
+                            emp_id_col = company_mapping.get('employee_id', 0)
+                            name_col = company_mapping.get('name', 1)
+                            salary_col = company_mapping.get('net_salary', 3)
+                            attendance_col = company_mapping.get('attendance', 2)
+
+                            # Get values
+                            emp_id = str(row.iloc[emp_id_col]) if emp_id_col < len(row) else ''
+                            name = str(row.iloc[name_col]) if name_col < len(row) else ''
+
+                            # Skip rows with empty names or IDs
+                            if not name.strip() or 'total' in name.lower():
+                                continue
+
+                            # Get salary and attendance
+                            try:
+                                salary = float(row.iloc[salary_col]) if salary_col < len(row) else 0
+                                attendance = float(row.iloc[attendance_col]) if attendance_col < len(row) else 26
+                            except (ValueError, TypeError):
+                                salary = 0
+                                attendance = 26
+
+                            # Create employee object
+                            employee = {
+                                'employee_id': emp_id.strip(),
+                                'name': name.strip(),
+                                'net_salary': salary,
+                                'attendance_days': attendance,
+                                'company': sheet_name
+                            }
+
+                            employees.append(employee)
+                        except Exception as e:
+                            continue
+
+                    # Add company data
+                    if employees:
+                        company_data = {
+                            "name": sheet_name,
+                            "employees": employees,
+                            "summary": {
+                                "employee_count": len(employees),
+                                "total_salary": sum(emp["net_salary"] for emp in employees),
+                                "total_overtime_hours": 0
+                            }
+                        }
+                        processed_data["companies"].append(company_data)
+
+                        # Update summary
+                        processed_data["summary"]["total_companies"] += 1
+                        processed_data["summary"]["total_employees"] += len(employees)
+                        processed_data["summary"]["total_salary"] += company_data["summary"]["total_salary"]
+                except Exception as e:
+                    continue
+
+            return processed_data
+        except Exception as e:
+            return {"error": str(e), "companies": [], "summary": {"total_companies": 0, "total_employees": 0}}
 
 app = Flask(__name__)
 
