@@ -4,18 +4,18 @@ services:
     name: payroll-pro-api
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && python main.py
+    buildCommand: cd payroll-app && pip install -r requirements.txt
+    startCommand: cd payroll-app/backend && python main.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.16
 
   # Frontend web service
-  - type: static
+  - type: web
     name: payroll-pro-web
     env: static
-    buildCommand: npm install && npm run build
-    publishDir: dist
+    buildCommand: cd payroll-app && npm install && npm run build
+    staticPublishPath: ./payroll-app/dist
     envVars:
       - key: VITE_API_URL
         fromService:
