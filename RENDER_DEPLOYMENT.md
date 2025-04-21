@@ -22,8 +22,8 @@ If the Blueprint deployment doesn't work, you can deploy each service manually:
 4. Configure the service:
    - **Name**: `payroll-pro-api`
    - **Environment**: Python
-   - **Build Command**: `cd payroll-app && pip install -r requirements.txt`
-   - **Start Command**: `cd payroll-app/backend && python main.py`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `cd backend && python main.py`
    - **Plan**: Free
 5. Click "Create Web Service"
 6. Wait for the deployment to complete and note the URL (e.g., `https://payroll-pro-api.onrender.com`)
@@ -34,8 +34,8 @@ If the Blueprint deployment doesn't work, you can deploy each service manually:
 2. Connect the same repository
 3. Configure the service:
    - **Name**: `payroll-pro-web`
-   - **Build Command**: `cd payroll-app && npm install && npm run build`
-   - **Publish Directory**: `payroll-app/dist`
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
    - **Environment Variables**: Add `VITE_API_URL` with the value of your backend URL from Step 1
 4. Click "Create Static Site"
 5. Wait for the deployment to complete
