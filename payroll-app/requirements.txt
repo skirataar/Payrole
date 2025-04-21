@@ -2,8 +2,8 @@
 fastapi==0.95.0
 uvicorn==0.22.0
 
-# Use specific versions to avoid build issues
-numpy==1.21.0
+# Scientific packages - using older versions for better compatibility
+numpy==1.20.3
 pandas==1.3.0
 openpyxl==3.0.9
 

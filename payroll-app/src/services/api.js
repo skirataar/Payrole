@@ -1,5 +1,5 @@
 // Get API URL from environment variable or use default
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Helper function to get the correct API URL
 const getApiUrl = (endpoint) => {
@@ -100,7 +100,7 @@ export const uploadExcelFile = async (file, month = null) => {
     let errorMessage = 'An error occurred while uploading the file.';
 
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-      errorMessage = 'Cannot connect to server. Is it running at http://localhost:5000?';
+      errorMessage = 'Cannot connect to server. Is it running at http://localhost:8000?';
     } else if (error.message.includes('404')) {
       errorMessage = 'Upload endpoint not found. Is the backend server running?';
     } else if (error.message.includes('400')) {
