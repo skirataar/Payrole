@@ -371,10 +371,48 @@ export const AuthProvider = ({ children }) => {
     const companyUser = mockUsers.find(u => u.companyId === companyId);
     if (companyUser) {
       companyUser.subscription = { ...companyUser.subscription, ...subscriptionData };
+
+      // Save updated mockUsers to localStorage
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+      console.log('Updated subscription data saved to localStorage');
+
       return true;
     }
 
     return false;
+  };
+
+  // Delete account (admin only)
+  const deleteAccount = (userId) => {
+    if (user?.role !== 'admin') {
+      setError('Unauthorized access');
+      return false;
+    }
+
+    // Find the user to delete
+    const userIndex = mockUsers.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      setError('User not found');
+      return false;
+    }
+
+    // Get the company ID before removing the user
+    const companyId = mockUsers[userIndex].companyId;
+
+    // Remove the user from mockUsers
+    mockUsers.splice(userIndex, 1);
+
+    // Remove the company data if it exists
+    if (companyId && mockCompanyData[companyId]) {
+      delete mockCompanyData[companyId];
+      localStorage.setItem('mockCompanyData', JSON.stringify(mockCompanyData));
+    }
+
+    // Save updated mockUsers to localStorage
+    localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+    console.log(`User with ID ${userId} deleted successfully`);
+
+    return true;
   };
 
   // Value object that will be passed to any consumer components
@@ -389,6 +427,7 @@ export const AuthProvider = ({ children }) => {
     getAllCompanies,
     getAllUsers,
     updateSubscription,
+    deleteAccount,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin'
   };

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, Filter, CheckCircle, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Download, Filter, CheckCircle, Calendar, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import * as XLSX from 'xlsx';
@@ -111,14 +111,50 @@ const SalaryReport = () => {
       // Load paid employees from localStorage with company and month information
       const savedPaidEmployees = localStorage.getItem(`paidEmployees_${companyId}`);
       if (savedPaidEmployees) {
-        const parsedData = JSON.parse(savedPaidEmployees);
-        console.log('Loaded paid employees data:', parsedData);
-        setPaidEmployees(parsedData);
+        try {
+          const parsedData = JSON.parse(savedPaidEmployees);
+          console.log('Loaded paid employees data:', parsedData);
+
+          // Ensure the structure is correct (an object with arrays)
+          const validatedData = {};
+          Object.keys(parsedData).forEach(month => {
+            // Ensure each month has an array of employee IDs
+            if (Array.isArray(parsedData[month])) {
+              validatedData[month] = parsedData[month];
+            } else {
+              console.warn(`Invalid data structure for month ${month}, resetting to empty array`);
+              validatedData[month] = [];
+            }
+          });
+
+          setPaidEmployees(validatedData);
+        } catch (error) {
+          console.error('Error parsing paid employees data:', error);
+          setPaidEmployees({});
+        }
       } else {
         console.log('No paid employees data found for this company');
         setPaidEmployees({});
       }
     }
+  }, [companyId]);
+
+  // Add a listener for localStorage changes to update paidEmployees
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === `paidEmployees_${companyId}`) {
+        console.log('localStorage changed, updating paidEmployees');
+        try {
+          const newData = JSON.parse(e.newValue);
+          setPaidEmployees(newData || {});
+        } catch (error) {
+          console.error('Error parsing updated paid employees data:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [companyId]);
 
   // Convert data to salary reports format
@@ -144,8 +180,29 @@ const SalaryReport = () => {
                 let employeeId = emp.employee_id || emp.id || '';
 
                 // Check if this employee is marked as paid for this specific month
-                const isPaid = paidEmployees[month] &&
-                              paidEmployees[month].includes(employeeId);
+                // Use a more defensive approach to check if the employee is paid
+                let isPaid = false;
+                try {
+                  // First check if the paidEmployees object and the month array exist
+                  if (paidEmployees &&
+                      typeof paidEmployees === 'object' &&
+                      month &&
+                      paidEmployees[month]) {
+
+                    // Make sure the month entry is an array
+                    const monthArray = Array.isArray(paidEmployees[month]) ?
+                      paidEmployees[month] :
+                      [];
+
+                    // Check if the employee ID is in the array
+                    if (employeeId && monthArray.includes(employeeId)) {
+                      isPaid = true;
+                      console.log(`Employee ${employeeId} is marked as paid for ${month}`);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error checking paid status:', error);
+                }
 
                 // Only include employees for the selected month, or all if no month is selected
                 if (!selectedMonth || selectedMonth === '' || month === selectedMonth) {
@@ -194,8 +251,29 @@ const SalaryReport = () => {
           const employeeMonth = emp.month || company.month || data.month || 'Unknown';
 
           // Check if this employee is marked as paid for this specific month
-          const isPaid = paidEmployees[employeeMonth] &&
-                        paidEmployees[employeeMonth].includes(employeeId);
+          // Use a more defensive approach to check if the employee is paid
+          let isPaid = false;
+          try {
+            // First check if the paidEmployees object and the month array exist
+            if (paidEmployees &&
+                typeof paidEmployees === 'object' &&
+                employeeMonth &&
+                paidEmployees[employeeMonth]) {
+
+              // Make sure the month entry is an array
+              const monthArray = Array.isArray(paidEmployees[employeeMonth]) ?
+                paidEmployees[employeeMonth] :
+                [];
+
+              // Check if the employee ID is in the array
+              if (employeeId && monthArray.includes(employeeId)) {
+                isPaid = true;
+                console.log(`Employee ${employeeId} is marked as paid for ${employeeMonth} (fallback)`);
+              }
+            }
+          } catch (error) {
+            console.error('Error checking paid status:', error);
+          }
 
           // Only include employees for the selected month, or all if no month is selected
           if (!selectedMonth || selectedMonth === '' || employeeMonth === selectedMonth) {
@@ -225,53 +303,114 @@ const SalaryReport = () => {
 
   const salaryReports = convertToSalaryReports(effectiveData);
 
-  // Filter reports based on search term, selected month, and payment status
-  const filteredReports = salaryReports.filter(report => {
-    const matchesSearch =
-      report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.id.toLowerCase().includes(searchTerm.toLowerCase());
+  // Add debugging for the selected status
+  useEffect(() => {
+    console.log(`Selected status changed to: ${selectedStatus}`);
+  }, [selectedStatus]);
 
-    // Company filtering removed as the app is for a single company
+  // Use useMemo to filter reports only when dependencies change
+  const filteredReports = useMemo(() => {
+    console.log('Filtering reports with status:', selectedStatus);
+    let result = [];
 
-    const matchesMonth = !selectedMonth || selectedMonth === '' || report.month === selectedMonth;
+    try {
+      // Make a safe copy of salary reports
+      const safeReports = Array.isArray(salaryReports) ? salaryReports : [];
 
-    // Filter by payment status
-    const matchesStatus =
-      selectedStatus === 'All' ||
-      (selectedStatus === 'Paid' && report.status === 'Paid') ||
-      (selectedStatus === 'Unpaid' && report.status === 'Unpaid');
+      // Apply all filters at once
+      result = safeReports.filter(report => {
+        // Skip null/undefined reports
+        if (!report) return false;
 
-    return matchesSearch && matchesMonth && matchesStatus;
-  });
+        // Month filter
+        const monthMatch = !selectedMonth || report.month === selectedMonth;
+
+        // Search filter
+        let searchMatch = true;
+        if (searchTerm) {
+          const name = String(report.name || '').toLowerCase();
+          const id = String(report.id || '').toLowerCase();
+          const term = searchTerm.toLowerCase();
+          searchMatch = name.includes(term) || id.includes(term);
+        }
+
+        // Status filter
+        let statusMatch = true;
+        if (selectedStatus !== 'All') {
+          if (selectedStatus === 'Paid') {
+            statusMatch = report.status === 'Paid';
+          } else if (selectedStatus === 'Unpaid') {
+            statusMatch = report.status !== 'Paid';
+          }
+        }
+
+        return monthMatch && searchMatch && statusMatch;
+      });
+
+      console.log(`Filtered to ${result.length} reports with status: ${selectedStatus}`);
+    } catch (error) {
+      console.error('Error in filtering reports:', error);
+      // Return empty array if there's an error
+      result = [];
+    }
+
+    return result;
+  }, [salaryReports, selectedMonth, selectedStatus, searchTerm]);
 
   const handlePaymentConfirm = () => {
     if (selectedEmployee) {
-      const month = selectedEmployee.month;
+      try {
+        // Safely get month and status
+        const month = selectedEmployee.month || 'Unknown';
+        const isCurrentlyPaid = selectedEmployee.status === "Paid";
+        const employeeId = selectedEmployee.id;
 
-      // Create a copy of the current paid employees object
-      const updatedPaidEmployees = { ...paidEmployees };
+        // Make sure we have a valid employee ID
+        if (!employeeId) {
+          console.error('Missing employee ID in handlePaymentConfirm');
+          setShowModal(false);
+          return;
+        }
 
-      // Initialize the array for this month if it doesn't exist
-      if (!updatedPaidEmployees[month]) {
-        updatedPaidEmployees[month] = [];
+        // Create a copy of the current paid employees object
+        const updatedPaidEmployees = { ...paidEmployees };
+
+        // Initialize the array for this month if it doesn't exist
+        if (!updatedPaidEmployees[month]) {
+          updatedPaidEmployees[month] = [];
+        }
+
+        if (isCurrentlyPaid) {
+          // If currently paid, remove from the paid list (mark as unpaid)
+          updatedPaidEmployees[month] = updatedPaidEmployees[month].filter(id => id !== employeeId);
+          console.log(`Marking employee ${employeeId} as unpaid for month ${month}`);
+        } else {
+          // If currently unpaid, add to the paid list (mark as paid)
+          if (!updatedPaidEmployees[month].includes(employeeId)) {
+            updatedPaidEmployees[month].push(employeeId);
+          }
+          console.log(`Marking employee ${employeeId} as paid for month ${month}`);
+        }
+
+        // Update localStorage first
+        localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
+
+        // Then update state
+        setPaidEmployees(updatedPaidEmployees);
+
+        // Reset the status filter to "All" to avoid blank screen issues
+        setSelectedStatus('All');
+
+      } catch (error) {
+        console.error('Error in handlePaymentConfirm:', error);
+        alert('An error occurred while updating payment status. Please try again.');
+      } finally {
+        setShowModal(false);
       }
-
-      // Add the employee ID to the array for this month if not already there
-      if (!updatedPaidEmployees[month].includes(selectedEmployee.id)) {
-        updatedPaidEmployees[month] = [...updatedPaidEmployees[month], selectedEmployee.id];
-      }
-
-      // Update state and localStorage with company-specific data
-      console.log(`Marking employee ${selectedEmployee.id} as paid for month ${month}`);
-      console.log('Updated paid employees data:', updatedPaidEmployees);
-
-      setPaidEmployees(updatedPaidEmployees);
-      localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
-      setShowModal(false);
     }
   };
 
-  const handleMarkAsPaid = (employee) => {
+  const handleTogglePaymentStatus = (employee) => {
     setSelectedEmployee(employee);
     setShowModal(true);
   };
@@ -318,45 +457,70 @@ const SalaryReport = () => {
     alert(`Salary report exported successfully as ${fileName}`);
   };
 
-  // Function to mark all currently filtered employees as paid
+  // Function to toggle payment status for all currently filtered employees
   const handleMarkAllAsPaid = () => {
     if (!selectedMonth || filteredReports.length === 0) {
-      alert('Please select a month and ensure there are employees to mark as paid.');
+      alert('Please select a month and ensure there are employees to update.');
       return;
     }
 
-    // Get all unpaid employees from the filtered list
-    const unpaidEmployees = filteredReports.filter(emp => emp.status === 'Unpaid');
+    try {
+      // Create a copy of the current paid employees object
+      const updatedPaidEmployees = { ...paidEmployees };
 
-    if (unpaidEmployees.length === 0) {
-      alert('All employees for this month are already marked as paid.');
-      return;
-    }
-
-    // Create a copy of the current paid employees object
-    const updatedPaidEmployees = { ...paidEmployees };
-
-    // Initialize the array for this month if it doesn't exist
-    if (!updatedPaidEmployees[selectedMonth]) {
-      updatedPaidEmployees[selectedMonth] = [];
-    }
-
-    // Add all unpaid employee IDs to the array for this month
-    unpaidEmployees.forEach(emp => {
-      if (!updatedPaidEmployees[selectedMonth].includes(emp.id)) {
-        updatedPaidEmployees[selectedMonth].push(emp.id);
+      // Initialize the array for this month if it doesn't exist
+      if (!updatedPaidEmployees[selectedMonth]) {
+        updatedPaidEmployees[selectedMonth] = [];
       }
-    });
 
-    // Update state and localStorage with company-specific data
-    console.log(`Marking ${unpaidEmployees.length} employees as paid for month ${selectedMonth}`);
-    console.log('Updated paid employees data:', updatedPaidEmployees);
+      // If we're viewing paid employees, mark all as unpaid
+      if (selectedStatus === 'Paid') {
+        // Get all employee IDs from filtered reports
+        const employeeIdsToRemove = filteredReports
+          .filter(emp => emp && emp.id)
+          .map(emp => emp.id);
 
-    setPaidEmployees(updatedPaidEmployees);
-    localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
+        // Remove these IDs from the paid list
+        updatedPaidEmployees[selectedMonth] = updatedPaidEmployees[selectedMonth]
+          .filter(id => !employeeIdsToRemove.includes(id));
 
-    // Show success message
-    alert(`Successfully marked ${unpaidEmployees.length} employees as paid for ${selectedMonth}.`);
+        // Update state and localStorage
+        setPaidEmployees(updatedPaidEmployees);
+        localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
+
+        // Reset the status filter to "All" to avoid blank screen issues
+        setSelectedStatus('All');
+
+        // Show success message
+        alert(`Successfully marked ${employeeIdsToRemove.length} employees as unpaid for ${selectedMonth}.`);
+      }
+      // Otherwise, mark all as paid
+      else {
+        // Get all employee IDs from filtered reports
+        const employeeIdsToAdd = [];
+
+        filteredReports.forEach(report => {
+          if (report && report.id && !updatedPaidEmployees[selectedMonth].includes(report.id)) {
+            employeeIdsToAdd.push(report.id);
+            updatedPaidEmployees[selectedMonth].push(report.id);
+          }
+        });
+
+        // Update state and localStorage
+        setPaidEmployees(updatedPaidEmployees);
+        localStorage.setItem(`paidEmployees_${companyId}`, JSON.stringify(updatedPaidEmployees));
+
+        // Reset the status filter to "All" to avoid blank screen issues
+        setSelectedStatus('All');
+
+        // Show success message
+        alert(`Successfully marked ${employeeIdsToAdd.length} employees as paid for ${selectedMonth}.`);
+      }
+
+    } catch (error) {
+      console.error('Error in handleMarkAllAsPaid:', error);
+      alert('An error occurred while updating payment status. Please try again.');
+    }
   };
 
   return (
@@ -431,13 +595,26 @@ const SalaryReport = () => {
         <div className="flex justify-end items-center gap-3 mt-4">
           <button
             onClick={handleMarkAllAsPaid}
-            disabled={!selectedMonth || filteredReports.filter(r => r.status === 'Unpaid').length === 0}
-            className={`flex items-center px-4 py-2 rounded-md ${!selectedMonth || filteredReports.filter(r => r.status === 'Unpaid').length === 0
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-              : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'}`}
+            disabled={!selectedMonth || filteredReports.length === 0}
+            className={`flex items-center px-4 py-2 rounded-md ${
+              !selectedMonth || filteredReports.length === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                : selectedStatus === 'Paid'
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
+            }`}
           >
-            <CheckCircle size={18} className="mr-2" />
-            Mark All as Paid
+            {selectedStatus === 'Paid' ? (
+              <>
+                <XCircle size={18} className="mr-2" />
+                Mark All as Unpaid
+              </>
+            ) : (
+              <>
+                <CheckCircle size={18} className="mr-2" />
+                Mark All as Paid
+              </>
+            )}
           </button>
 
           <button
@@ -498,53 +675,67 @@ const SalaryReport = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredReports.length > 0 ? (
+              {filteredReports && filteredReports.length > 0 ? (
                 filteredReports.map((report, index) => (
-                  <tr key={`${report.id}-${index}`} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 dark:text-white">{report.id}</td>
-                    <td className="px-6 py-4 dark:text-white">{report.name}</td>
-                    <td className="px-6 py-4 dark:text-white">{report.month || 'Unknown'}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.daily_salary).toLocaleString()}</td>
-                    <td className="px-6 py-4 dark:text-white">{report.attendance_days.toFixed(2)}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.monthly_salary).toLocaleString()}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.vda).toLocaleString()}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.total_b).toLocaleString()}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.deduction_total).toLocaleString()}</td>
-                    <td className="px-6 py-4 dark:text-white">₹{(report.net_salary).toLocaleString()}</td>
+                  <tr key={`${report?.id || index}-${index}`} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 dark:text-white">{report?.id || 'N/A'}</td>
+                    <td className="px-6 py-4 dark:text-white">{report?.name || 'Unknown'}</td>
+                    <td className="px-6 py-4 dark:text-white">{report?.month || 'Unknown'}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.daily_salary || 0)).toLocaleString()}</td>
+                    <td className="px-6 py-4 dark:text-white">{typeof report?.attendance_days === 'number' ? report.attendance_days.toFixed(2) : '0.00'}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.monthly_salary || 0)).toLocaleString()}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.vda || 0)).toLocaleString()}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.total_b || 0)).toLocaleString()}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.deduction_total || 0)).toLocaleString()}</td>
+                    <td className="px-6 py-4 dark:text-white">₹{((report?.net_salary || 0)).toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         report.status === "Paid"
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                           : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                       }`}>
-                        {report.status}
+                        {report.status || 'Unpaid'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {report.status !== "Paid" && (
-                        <button
-                          onClick={() => handleMarkAsPaid(report)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          Mark as Paid
-                        </button>
-                      )}
-                      {report.status === "Paid" && (
-                        <span className="text-green-600 dark:text-green-400 flex items-center">
-                          <CheckCircle size={16} className="mr-1" />
-                          Paid
-                        </span>
-                      )}
+                      <button
+                        onClick={() => handleTogglePaymentStatus(report)}
+                        className={`flex items-center ${
+                          report.status === "Paid"
+                            ? "text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+                            : "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        }`}
+                      >
+                        {report.status === "Paid" ? (
+                          <>
+                            <CheckCircle size={16} className="mr-1" />
+                            Mark as Unpaid
+                          </>
+                        ) : (
+                          "Mark as Paid"
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan="12" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    {selectedMonth ?
-                      `No salary data available for ${selectedMonth}. Please upload an Excel file for this month.` :
+                    {selectedStatus !== 'All' ? (
+                      <div>
+                        <p className="mb-4">No {selectedStatus} employees found for the selected filters.</p>
+                        <button
+                          onClick={() => setSelectedStatus('All')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                        >
+                          Show All Employees
+                        </button>
+                      </div>
+                    ) : selectedMonth ? (
+                      `No salary data available for ${selectedMonth}. Please upload an Excel file for this month.`
+                    ) : (
                       `No salary data available. Please upload an Excel file.`
-                    }
+                    )}
                   </td>
                 </tr>
               )}
@@ -553,15 +744,29 @@ const SalaryReport = () => {
         </div>
       </div>
 
-      {/* Payment Confirmation Modal */}
+      {/* Payment Status Toggle Confirmation Modal */}
       {showModal && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full dark:text-white">
-            <h3 className="text-lg font-medium mb-4">Confirm Payment</h3>
-            <p className="mb-2">Are you sure you want to mark the payment for <strong>{selectedEmployee.name}</strong> as completed?</p>
-            <p className="mb-2">Month: <strong>{selectedEmployee.month || 'Unknown'}</strong></p>
-            <p className="mb-2">Attendance: <strong>{typeof selectedEmployee.attendance_days === 'number' ? selectedEmployee.attendance_days.toFixed(2) : parseFloat(selectedEmployee.attendance_days || 26).toFixed(2)} days</strong></p>
-            <p className="mb-6">Amount: <strong>₹{(selectedEmployee.bank_transfer || selectedEmployee.net_salary || 0).toLocaleString()}</strong></p>
+            <h3 className="text-lg font-medium mb-4">
+              {selectedEmployee?.status === "Paid" ? "Mark as Unpaid" : "Confirm Payment"}
+            </h3>
+
+            {selectedEmployee?.status === "Paid" ? (
+              <p className="mb-2">Are you sure you want to mark <strong>{selectedEmployee?.name || 'this employee'}</strong> as unpaid?</p>
+            ) : (
+              <p className="mb-2">Are you sure you want to mark the payment for <strong>{selectedEmployee?.name || 'this employee'}</strong> as completed?</p>
+            )}
+
+            <p className="mb-2">Month: <strong>{selectedEmployee?.month || 'Unknown'}</strong></p>
+            <p className="mb-2">Attendance: <strong>
+              {typeof selectedEmployee?.attendance_days === 'number'
+                ? selectedEmployee.attendance_days.toFixed(2)
+                : '0.00'} days
+            </strong></p>
+            <p className="mb-6">Amount: <strong>₹{(
+              selectedEmployee?.net_salary || 0
+            ).toLocaleString()}</strong></p>
 
             <div className="flex justify-end space-x-3">
               <button
@@ -572,9 +777,13 @@ const SalaryReport = () => {
               </button>
               <button
                 onClick={handlePaymentConfirm}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                className={`px-4 py-2 text-white rounded-md ${
+                  selectedEmployee?.status === "Paid"
+                    ? "bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800"
+                    : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                }`}
               >
-                Confirm
+                {selectedEmployee?.status === "Paid" ? "Mark as Unpaid" : "Confirm Payment"}
               </button>
             </div>
           </div>

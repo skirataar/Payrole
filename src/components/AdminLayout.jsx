@@ -14,6 +14,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import SubscriptionGate from './SubscriptionGate';
+import logo from '../assets/logo.png';
 
 const AdminLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -71,7 +72,7 @@ const AdminLayout = ({ children }) => {
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center">
-            <DollarSign className="text-blue-600 dark:text-blue-400 mr-2" size={24} />
+            <img src={logo} alt="Payroll Pro Logo" className="h-8 w-auto mr-2" />
             <h1 className="text-xl font-bold">Payroll Pro Admin</h1>
           </div>
         </div>

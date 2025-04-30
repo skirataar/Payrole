@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock, Mail, User, Building, DollarSign } from 'lucide-reac
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import logo from '../assets/logo.png';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -80,8 +81,8 @@ const Register = () => {
     <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
       <div className={`max-w-md w-full space-y-8 p-10 rounded-xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="text-center">
-          <div className="mx-auto flex justify-center items-center h-20 w-20 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
-            <DollarSign size={40} className="text-blue-600 dark:text-blue-400" />
+          <div className="mx-auto flex justify-center items-center h-20 w-20 mb-4">
+            <img src={logo} alt="Payroll Pro Logo" className="h-20 w-auto" />
           </div>
           <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Payroll Pro

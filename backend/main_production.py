@@ -1,6 +1,6 @@
-from fastapi import FastAPI, UploadFile, HTTPException, Form, Request
+from fastapi import FastAPI, UploadFile, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Optional
 import pandas as pd
@@ -8,23 +8,42 @@ import io
 import os
 import json
 import datetime
+import logging
+from dotenv import load_dotenv
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # Import the excel processor module
 import excel_processor
+from logging_config import setup_logging
 
+# Load environment variables
+load_dotenv()
+
+# Setup logging
+logger = setup_logging()
+
+# Create FastAPI app
 app = FastAPI(
-    title="Payroll Management API",
+    title="Payroll Pro API",
     description="API for managing payroll data and Excel file processing",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
-# Enable CORS for all origins
+# Enable CORS
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add Prometheus monitoring
+Instrumentator().instrument(app).expose(app, endpoint="/api/metrics", include_in_schema=False)
 
 # In-memory storage
 class DataStore:
@@ -41,15 +60,15 @@ try:
     # For local development, check if the dist directory exists in the current directory
     elif os.path.exists('./dist'):
         app.mount("/", StaticFiles(directory="./dist", html=True), name="static")
-    print("Static files mounted successfully")
+    logger.info("Static files mounted successfully")
 except Exception as e:
-    print(f"Error mounting static files: {str(e)}")
+    logger.error(f"Error mounting static files: {str(e)}")
 
 @app.get("/api")
 async def api_root():
     """Root endpoint providing API information"""
     return JSONResponse({
-        "message": "Welcome to Payroll Management API",
+        "message": "Welcome to Payroll Pro API",
         "version": "1.0.0",
         "endpoints": {
             "POST /api/upload_excel": "Upload Excel file with payroll data",
@@ -58,8 +77,8 @@ async def api_root():
             "GET /api/companies": "Get list of all companies",
             "GET /api/health": "Health check endpoint",
         },
-        "documentation": "/docs",  # FastAPI automatic documentation
-        "redoc": "/redoc"         # Alternative documentation
+        "documentation": "/api/docs",
+        "redoc": "/api/redoc"
     })
 
 @app.get("/api/health")
@@ -152,65 +171,19 @@ def parse_excel_sheet(df: pd.DataFrame, company_name: str) -> List[Dict]:
     """Parse a single Excel sheet and extract employee data."""
     try:
         # Print all columns from the DataFrame for debugging
-        print(f"\nSheet: {company_name}")
-        print("Available columns:", df.columns.tolist())
+        logger.debug(f"Sheet: {company_name}")
+        logger.debug(f"Available columns: {df.columns.tolist()}")
 
         # Clean column names in DataFrame
         df.columns = df.columns.str.strip()
-        print("Cleaned columns:", df.columns.tolist())
-
-        mappings = {
-            'Company1': {
-                'employee_id': 'Card No',
-                'name': 'NAME',
-                'net_salary': 'Bank Transfer'
-            },
-            'Naps': {
-                'employee_id': 'INTER ID',
-                'name': 'NAME',
-                'net_salary': 'Total Amount'
-            },
-            'Nayana': {
-                'employee_id': 'Employee Code',
-                'name': 'Name of the employee',
-                'net_salary': 'Net Payable'
-            },
-            'SG': {
-                'employee_id': 'card no',
-                'name': 'NAME',
-                'net_salary': 'Bank Transfer'
-            },
-            'Ink': {
-                'employee_id': 'Employee Code',
-                'name': 'Name of the employee',
-                'net_salary': 'Bank Transfer'
-            },
-            'golden eye': {
-                'employee_id': 'Emp Code',
-                'name': 'Names',
-                'net_salary': 'CTC'
-            },
-            'Genius': {
-                'employee_id': 'Card No',
-                'name': 'NAME',
-                'net_salary': 'BANK Transfer'
-            },
-            'Amigo': {
-                'employee_id': 'Emp Code',
-                'name': 'Names',
-                'net_salary': 'Bank Statement'
-            }
-        }
+        logger.debug(f"Cleaned columns: {df.columns.tolist()}")
 
         # Get mapping for current company
-        column_mapping = mappings.get(company_name)
+        column_mapping = get_company_specific_columns(company_name)
         if not column_mapping:
             raise ValueError(f"No column mapping found for company: {company_name}")
 
-        print(f"Looking for columns: {list(column_mapping.values())}")
-
-        # Skip column name validation if we're using column positions
-        # We'll check for column mappings in the request later
+        logger.info(f"Looking for columns: {list(column_mapping.values())}")
 
         # Extract data
         employees = []
@@ -227,7 +200,7 @@ def parse_excel_sheet(df: pd.DataFrame, company_name: str) -> List[Dict]:
                 try:
                     salary = float(salary_str) if salary_str else 0
                 except ValueError:
-                    print(f"Warning: Invalid salary value in row {idx+1}: {salary_str}")
+                    logger.warning(f"Invalid salary value in row {idx+1}: {salary_str}")
                     continue
 
                 employee = {
@@ -245,7 +218,7 @@ def parse_excel_sheet(df: pd.DataFrame, company_name: str) -> List[Dict]:
                     employees.append(employee)
 
             except Exception as e:
-                print(f"Warning: Error processing row {idx+1}: {str(e)}")
+                logger.warning(f"Error processing row {idx+1}: {str(e)}")
                 continue
 
         if not employees:
@@ -254,6 +227,7 @@ def parse_excel_sheet(df: pd.DataFrame, company_name: str) -> List[Dict]:
         return employees
 
     except Exception as e:
+        logger.error(f"Error parsing sheet {company_name}: {str(e)}")
         raise ValueError(f"Error parsing sheet {company_name}: {str(e)}")
 
 @app.post("/api/upload_excel")
@@ -266,6 +240,7 @@ async def upload_excel(file: UploadFile, column_mappings: Optional[str] = None):
         )
 
     try:
+        logger.info(f"Processing Excel file: {file.filename}")
         contents = await file.read()
         # Use pandas options to preserve float precision
         with pd.option_context('display.float_format', '{:.10f}'.format):
@@ -282,17 +257,15 @@ async def upload_excel(file: UploadFile, column_mappings: Optional[str] = None):
         if column_mappings:
             try:
                 mappings = json.loads(column_mappings)
-                print("Using column mappings:", mappings)
+                logger.info(f"Using column mappings: {mappings}")
                 # Use the excel_processor to process the file with column positions
                 return excel_processor.process_excel_file_by_position(excel_file, mappings)
             except json.JSONDecodeError:
-                print("Invalid column mappings format")
+                logger.warning("Invalid column mappings format")
                 # Continue with standard processing
                 pass
         else:
             # If no column mappings provided, use default mappings
-            # These are the column numbers you provided
-            # Column mappings for employees (0-based index)
             mappings = {
                 # Default mapping for all sheets based on actual Excel structure
                 'default': {
@@ -308,92 +281,15 @@ async def upload_excel(file: UploadFile, column_mappings: Optional[str] = None):
                     'lwf_employee_bool': 9, # Column 10 (0-based: 9) - LWF40 (boolean)
                     'lwf_employer_bool': 10  # Column 11 (0-based: 10) - LWF60 (boolean)
                 }
-                # No need for specific sheet mappings as we'll use the default for all sheets
-
             }
-            print("Using default column mappings:", mappings)
+            logger.info(f"Using default column mappings: {mappings}")
             # Use the excel_processor to process the file with column positions
             return excel_processor.process_excel_file_by_position(excel_file, mappings)
-        processed_data = {
-            "companies": [],
-            "summary": {
-                "total_companies": 0,
-                "total_employees": 0,
-                "total_salary": 0,
-                "total_overtime_hours": 0
-            }
-        }
-
-        for sheet_name in excel_file.sheet_names:
-            try:
-                # Skip empty sheet names or those with only spaces
-                if not sheet_name.strip():
-                    continue
-
-                print(f"\nProcessing sheet: {sheet_name}")
-                df = pd.read_excel(excel_file, sheet_name=sheet_name)
-
-                # Skip empty sheets
-                if df.empty:
-                    print(f"Skipping empty sheet: {sheet_name}")
-                    continue
-
-                employees = parse_excel_sheet(df, sheet_name)
-
-                if employees:
-                    company_data = {
-                        "name": sheet_name,
-                        "employees": employees,
-                        "summary": {
-                            "employee_count": len(employees),
-                            "total_salary": sum(emp["net_salary"] for emp in employees),
-                            "total_overtime_hours": sum(emp["overtime_hours"] for emp in employees)
-                        }
-                    }
-                    processed_data["companies"].append(company_data)
-
-                    # Update overall summary
-                    processed_data["summary"]["total_companies"] += 1
-                    processed_data["summary"]["total_employees"] += len(employees)
-                    processed_data["summary"]["total_salary"] += company_data["summary"]["total_salary"]
-                    processed_data["summary"]["total_overtime_hours"] += company_data["summary"]["total_overtime_hours"]
-
-            except Exception as e:
-                print(f"Error processing sheet {sheet_name}: {str(e)}")
-                continue
-
-        # Always return some data, even if empty
-        if not processed_data["companies"]:
-            print("No companies found in the Excel file, creating a dummy company")
-            # Create a dummy company with a dummy employee
-            processed_data["companies"] = [{
-                "name": "Sample Company",
-                "employees": [{
-                    'employee_id': "SAMPLE-001",
-                    'name': "Sample Employee",
-                    'net_salary': 10000,
-                    'hours_worked': 0,
-                    'overtime_hours': 0,
-                    'bank_account': '',
-                    'company': "Sample Company"
-                }],
-                "summary": {
-                    "employee_count": 1,
-                    "total_salary": 10000,
-                    "total_overtime_hours": 0
-                }
-            }]
-
-            # Update overall summary
-            processed_data["summary"]["total_companies"] = 1
-            processed_data["summary"]["total_employees"] = 1
-            processed_data["summary"]["total_salary"] = 10000
-
-        return processed_data
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error processing Excel file: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=400,
             detail=f"Error processing Excel file: {str(e)}"
@@ -409,12 +305,15 @@ async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[s
         )
 
     try:
+        logger.info(f"Processing Excel file by position: {file.filename}")
         # Parse column mappings from JSON string
         mappings = {}
         if column_mappings:
             try:
                 mappings = json.loads(column_mappings)
+                logger.info(f"Using column mappings: {mappings}")
             except json.JSONDecodeError:
+                logger.error("Invalid column mappings format")
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid column mappings format"
@@ -436,7 +335,7 @@ async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[s
 
         # Add month information if provided
         if month:
-            print(f"Adding month information: {month}")
+            logger.info(f"Adding month information: {month}")
             processed_data["month"] = month
 
             # Add month to each employee record
@@ -444,15 +343,12 @@ async def upload_excel_by_position(file: UploadFile, column_mappings: Optional[s
                 for employee in company["employees"]:
                     employee["month"] = month
 
-        # Don't create dummy data if no companies found
-        if not processed_data["companies"]:
-            print("No companies found in the Excel file, but not creating a dummy company")
-
         return processed_data
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error processing Excel file: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=400,
             detail=f"Error processing Excel file: {str(e)}"
@@ -463,6 +359,7 @@ async def get_employees(company_id: Optional[str] = None):
     try:
         if company_id:
             if company_id not in data_store.companies:
+                logger.warning(f"Company not found: {company_id}")
                 raise HTTPException(status_code=404, detail="Company not found")
             return data_store.companies[company_id]
 
@@ -472,7 +369,10 @@ async def get_employees(company_id: Optional[str] = None):
             all_employees.extend(employees)
         return all_employees
 
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error retrieving employees: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/companies")
@@ -490,6 +390,7 @@ async def get_companies():
         return companies
 
     except Exception as e:
+        logger.error(f"Error retrieving companies: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/api/clear-data")
@@ -498,8 +399,10 @@ async def clear_data():
     try:
         # Clear the companies dictionary
         data_store.companies.clear()
+        logger.info("All data has been cleared successfully")
         return {"message": "All data has been cleared successfully"}
     except Exception as e:
+        logger.error(f"Error clearing data: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error clearing data: {str(e)}")
 
 @app.get('/favicon.ico', include_in_schema=False)
@@ -509,7 +412,19 @@ async def favicon():
 
 if __name__ == "__main__":
     import uvicorn
-    import os
-    # Get port from environment variable for Render.com compatibility
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    
+    # Get port from environment variable
+    port = int(os.getenv("PORT", 8000))
+    
+    # Get debug mode from environment variable
+    debug = os.getenv("DEBUG", "false").lower() == "true"
+    
+    logger.info(f"Starting server on port {port}, debug mode: {debug}")
+    
+    uvicorn.run(
+        "main_production:app", 
+        host="0.0.0.0", 
+        port=port,
+        reload=debug,
+        log_level=os.getenv("LOG_LEVEL", "info").lower()
+    )

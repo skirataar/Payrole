@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, CheckCircle, XCircle, Edit, AlertTriangle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Edit, AlertTriangle, Trash2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const AdminSubscriptions = () => {
-  const { user, getAllCompanies, getAllUsers, updateSubscription, loading } = useAuth();
+  const { user, getAllCompanies, getAllUsers, updateSubscription, deleteAccount, loading } = useAuth();
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [subscriptionData, setSubscriptionData] = useState({
     plan: 'basic',
     status: 'active',
@@ -64,6 +66,24 @@ const AdminSubscriptions = () => {
     } else {
       alert('Failed to update subscription');
     }
+  };
+
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteAccount = () => {
+    if (userToDelete && deleteAccount(userToDelete.id)) {
+      // Update local state
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userToDelete.id));
+      setCompanies(prevCompanies => prevCompanies.filter(c => c.id !== userToDelete.companyId));
+      setIsDeleteModalOpen(false);
+      alert('Account deleted successfully');
+    } else {
+      alert('Failed to delete account');
+    }
+    setUserToDelete(null);
   };
 
   // Calculate days until expiration
@@ -221,12 +241,22 @@ const AdminSubscriptions = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        <button
-                          onClick={() => handleEditSubscription(company)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                        >
-                          <Edit size={18} />
-                        </button>
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => handleEditSubscription(company)}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                            title="Edit subscription"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(user)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            title="Delete account"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -301,6 +331,44 @@ const AdminSubscriptions = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {isDeleteModalOpen && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className="text-lg font-medium mb-4">Delete Account</h3>
+            <div className="mb-6">
+              <div className="flex items-center justify-center mb-4 text-red-500">
+                <Trash2 size={48} />
+              </div>
+              <p className="mb-2">Are you sure you want to delete the following account?</p>
+              <div className={`p-4 rounded-md ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} mb-4`}>
+                <p><strong>Company:</strong> {userToDelete.name}</p>
+                <p><strong>Email:</strong> {userToDelete.email}</p>
+              </div>
+              <p className="text-red-500 font-medium">This action cannot be undone. All data associated with this account will be permanently deleted.</p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setUserToDelete(null);
+                }}
+                className={`px-4 py-2 rounded-md ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete Account
               </button>
             </div>
           </div>

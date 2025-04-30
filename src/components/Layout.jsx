@@ -9,6 +9,7 @@ import {
   Moon, Sun
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import logo from '../assets/logo.png';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -74,7 +75,10 @@ const Layout = ({ children }) => {
         }`}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b dark:border-gray-700">
-          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Payroll Pro</h1>
+          <div className="flex items-center">
+            <img src={logo} alt="Payroll Pro Logo" className="h-8 w-auto mr-2" />
+            <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Payroll Pro</h1>
+          </div>
           <button
             onClick={() => setSidebarOpen(false)}
             className="p-2 rounded-md lg:hidden hover:bg-gray-200 dark:hover:bg-gray-700"
