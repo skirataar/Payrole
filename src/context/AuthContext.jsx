@@ -243,6 +243,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
+      // Note: Activity logging will be handled in the Login component
+      // since we don't have access to the ActivityContext here
+
       return userWithoutPassword;
     } catch (err) {
       setError(err.message || 'An error occurred during login');
@@ -415,6 +418,41 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
+  // Change password function
+  const changePassword = (currentPassword, newPassword) => {
+    setError('');
+    try {
+      // Find the current user in mockUsers
+      const userIndex = mockUsers.findIndex(u => u.id === user.id);
+
+      if (userIndex === -1) {
+        throw new Error('User not found');
+      }
+
+      // Verify current password
+      if (mockUsers[userIndex].password !== currentPassword) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Check if new password is the same as current password
+      if (currentPassword === newPassword) {
+        throw new Error('New password cannot be the same as current password');
+      }
+
+      // Update the password
+      mockUsers[userIndex].password = newPassword;
+
+      // Save updated mockUsers to localStorage
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+
+      console.log('Password changed successfully');
+      return true;
+    } catch (err) {
+      setError(err.message || 'An error occurred while changing password');
+      throw err;
+    }
+  };
+
   // Value object that will be passed to any consumer components
   const value = {
     user,
@@ -428,6 +466,7 @@ export const AuthProvider = ({ children }) => {
     getAllUsers,
     updateSubscription,
     deleteAccount,
+    changePassword,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin'
   };

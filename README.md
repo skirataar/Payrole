@@ -13,6 +13,7 @@ Payroll Pro is an all-in-one payroll management solution designed for HR teams h
 - **Detailed Salary Reports**: Filter, sort, and export salary breakdowns
 - **Payment Tracking**: Mark employees as paid and monitor payment statuses
 - **Excel Export**: Download processed payroll data for offline use
+- **Activity Logging**: Track user actions with a detailed activity history for each company
 - **Multi-Company Support**: Each company has its own isolated account and data
 - **Secure Authentication**: Role-based login and registration system
 - **Subscription Plans**: Multiple plans with renewal tracking and feature restrictions
@@ -308,7 +309,9 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
 
 1. **Register/Login**: Create a company account or log in
 2. **Subscription**: Pick a plan (Basic, Standard, Premium)
-3. **Dashboard**: Visualize attendance and salary metrics
+3. **Dashboard**:
+   - Visualize attendance and salary metrics
+   - View recent activity logs for your account
 4. **Upload Excel**: Import attendance data with month selection
 5. **Salary Report**:
    - View, filter, and export salary reports
@@ -318,6 +321,7 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
    - Customize salary parameters
    - Toggle dark mode
    - Reset or clear uploaded data without affecting the account
+   - Change account password securely
 
 ### For Admins
 
@@ -330,6 +334,15 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
 
 ## Changelog
 
+### v1.3.0 (May 2025)
+- Activity logging system for tracking user actions
+- Company-specific activity history
+- Password change functionality in settings
+- Enhanced dashboard with activity display
+- Improved data isolation between companies
+- Performance optimizations
+- Bug fixes and UI improvements
+
 ### v1.2.0 (April 2025)
 - Multi-company support
 - Role-based authentication
@@ -339,7 +352,7 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
 - Codebase cleanup and optimization
 - Docker deployment support
 
-### v1.1.0 (April 2025)
+### v1.1.0 (March 2025)
 - Dark mode support
 - Single company UI streamlining
 - UI spacing and alignment fixes

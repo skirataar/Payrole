@@ -15,6 +15,7 @@ const AdminDashboard = () => {
     status: 'active',
     expiresAt: ''
   });
+
   const { darkMode } = useTheme();
   const navigate = useNavigate();
 
@@ -65,6 +66,8 @@ const AdminDashboard = () => {
       alert('Failed to update subscription');
     }
   };
+
+
 
   return (
     <div className={`p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
@@ -267,6 +270,8 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

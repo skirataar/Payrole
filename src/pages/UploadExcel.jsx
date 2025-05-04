@@ -3,10 +3,12 @@ import { Upload, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { uploadExcelFile } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useActivity } from '../context/ActivityContext';
 
 const UploadExcel = () => {
   const { user } = useAuth();
   const { updateMonthData } = useCompany();
+  const { logActivity } = useActivity();
 
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -101,6 +103,21 @@ const UploadExcel = () => {
       // Update state with the uploaded data for this specific month
       updateMonthData(data, selectedMonth);
       setUploadStatus('success');
+
+      // Log the activity directly
+      if (logActivity) {
+        try {
+          logActivity('UPLOAD_EXCEL', {
+            fileName: file.name,
+            month: selectedMonth,
+            employeeCount: data.companies ? data.companies.length : 0,
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
+          console.error('Error logging activity:', error);
+          // Continue even if activity logging fails
+        }
+      }
 
       // Save last upload info to localStorage with company ID
       localStorage.setItem(`lastUploadTime_${companyId}`, new Date().toISOString());

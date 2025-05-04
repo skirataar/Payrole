@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Download, Filter, CheckCircle, Calendar, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useActivity } from '../context/ActivityContext';
 import * as XLSX from 'xlsx';
 
 const SalaryReport = () => {
   const { user } = useAuth();
   const { uploadedData } = useCompany();
+  const { logActivity } = useActivity();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [availableMonths, setAvailableMonths] = useState([]);
@@ -384,12 +386,42 @@ const SalaryReport = () => {
           // If currently paid, remove from the paid list (mark as unpaid)
           updatedPaidEmployees[month] = updatedPaidEmployees[month].filter(id => id !== employeeId);
           console.log(`Marking employee ${employeeId} as unpaid for month ${month}`);
+
+          // Log the activity if the activity logger is available
+          if (logActivity) {
+            try {
+              logActivity('MARK_UNPAID', {
+                employeeId,
+                employeeName: selectedEmployee.name,
+                month,
+                timestamp: new Date().toISOString()
+              });
+            } catch (error) {
+              console.error('Error logging activity:', error);
+              // Continue even if activity logging fails
+            }
+          }
         } else {
           // If currently unpaid, add to the paid list (mark as paid)
           if (!updatedPaidEmployees[month].includes(employeeId)) {
             updatedPaidEmployees[month].push(employeeId);
           }
           console.log(`Marking employee ${employeeId} as paid for month ${month}`);
+
+          // Log the activity if the activity logger is available
+          if (logActivity) {
+            try {
+              logActivity('MARK_PAID', {
+                employeeId,
+                employeeName: selectedEmployee.name,
+                month,
+                timestamp: new Date().toISOString()
+              });
+            } catch (error) {
+              console.error('Error logging activity:', error);
+              // Continue even if activity logging fails
+            }
+          }
         }
 
         // Update localStorage first
@@ -452,6 +484,22 @@ const SalaryReport = () => {
 
     // Save the file
     XLSX.writeFile(wb, fileName);
+
+    // Log the activity if the activity logger is available
+    if (logActivity) {
+      try {
+        logActivity('GENERATE_REPORT', {
+          reportType: 'Salary Report',
+          month: selectedMonth || 'All Months',
+          employeeCount: filteredReports.length,
+          fileName,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error logging activity:', error);
+        // Continue even if activity logging fails
+      }
+    }
 
     // Show success message
     alert(`Salary report exported successfully as ${fileName}`);

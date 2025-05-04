@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, Mail, User, LogIn } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useActivity } from '../context/ActivityContext';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
@@ -14,6 +15,7 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
   const { darkMode } = useTheme();
   const { user, login, error: authError } = useAuth();
+  const { logActivity } = useActivity();
   const navigate = useNavigate();
 
   // Use the error from auth context or local error
@@ -47,7 +49,20 @@ const Login = () => {
       setIsLoading(true);
 
       // Call the login function from auth context
-      await login(email, password);
+      const loggedInUser = await login(email, password);
+
+      // Log the login activity if the activity logger is available
+      if (logActivity) {
+        try {
+          logActivity('LOGIN', {
+            email: loggedInUser.email,
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
+          console.error('Error logging activity:', error);
+          // Continue with login even if activity logging fails
+        }
+      }
 
       // Set shouldRedirect to true to trigger the redirect in useEffect
       setShouldRedirect(true);

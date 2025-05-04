@@ -21,14 +21,16 @@ import AdminLayout from './components/AdminLayout';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { CompanyProvider } from './context/CompanyContext';
+import { ActivityProvider } from './context/ActivityContext';
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <CompanyProvider>
-          <BrowserRouter>
-            <Routes>
+          <ActivityProvider>
+            <BrowserRouter>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
@@ -49,7 +51,8 @@ function App() {
               {/* Fallback Route */}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-          </BrowserRouter>
+            </BrowserRouter>
+          </ActivityProvider>
         </CompanyProvider>
       </AuthProvider>
     </ThemeProvider>

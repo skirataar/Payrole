@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Save, AlertCircle, Moon, Sun, Trash2, Database, RefreshCw } from 'lucide-react';
+import { Save, AlertCircle, Moon, Sun, Trash2, Database, RefreshCw, User, Lock, Eye, EyeOff, X, Clock } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useActivity } from '../context/ActivityContext';
 
 const Settings = () => {
   const { darkMode, toggleDarkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, changePassword } = useAuth();
   const { setUploadedData } = useCompany();
+  const { activities = [] } = useActivity() || {};
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -25,6 +27,17 @@ const Settings = () => {
   });
 
   const [saveStatus, setSaveStatus] = useState(null);
+
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordChangeStatus, setPasswordChangeStatus] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,9 +58,105 @@ const Settings = () => {
     }, 3000);
   };
 
+  // Handle password change form input
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData({
+      ...passwordData,
+      [name]: value
+    });
+
+    // Reset status when user starts typing again
+    if (passwordChangeStatus) {
+      setPasswordChangeStatus(null);
+    }
+  };
+
+  // Handle password change submission
+  const handlePasswordSubmit = () => {
+    // Reset status
+    setPasswordChangeStatus(null);
+
+    // Validate form
+    if (!passwordData.currentPassword) {
+      setPasswordChangeStatus({ type: 'error', message: 'Current password is required' });
+      return;
+    }
+
+    if (!passwordData.newPassword) {
+      setPasswordChangeStatus({ type: 'error', message: 'New password is required' });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordChangeStatus({ type: 'error', message: 'New passwords do not match' });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordChangeStatus({ type: 'error', message: 'New password must be at least 6 characters long' });
+      return;
+    }
+
+    // Try to change password
+    try {
+      changePassword(passwordData.currentPassword, passwordData.newPassword);
+
+      // Show success message
+      setPasswordChangeStatus({ type: 'success', message: 'Password changed successfully' });
+
+      // Clear form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordChangeStatus(null);
+      }, 2000);
+
+    } catch (error) {
+      // Show error message
+      setPasswordChangeStatus({ type: 'error', message: error.message });
+    }
+  };
+
   return (
     <div className="p-6 dark:bg-gray-900 dark:text-white">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
+
+      {/* Profile Settings */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium mb-4 flex items-center">
+          <User size={20} className="mr-2" />
+          Profile Settings
+        </h2>
+
+        <div className="mb-4">
+          <p className="text-gray-700 dark:text-gray-300 mb-1">
+            <strong>Name:</strong> {user?.name || 'N/A'}
+          </p>
+          <p className="text-gray-700 dark:text-gray-300 mb-1">
+            <strong>Email:</strong> {user?.email || 'N/A'}
+          </p>
+          <p className="text-gray-700 dark:text-gray-300 mb-1">
+            <strong>Role:</strong> {user?.role === 'admin' ? 'Administrator' : 'Company User'}
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+          >
+            <Lock size={18} className="mr-2" />
+            Change Password
+          </button>
+        </div>
+      </div>
 
       {/* Dark Mode Toggle */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
@@ -335,6 +444,8 @@ const Settings = () => {
             </p>
           </div>
 
+
+
           {isAdmin && (
             <div>
               <button
@@ -365,6 +476,125 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full dark:text-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium flex items-center">
+                <Lock size={20} className="mr-2" />
+                Change Password
+              </h3>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Current Password */}
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    id="currentPassword"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md pl-3 pr-10 py-2 w-full"
+                    placeholder="Enter your current password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    id="newPassword"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md pl-3 pr-10 py-2 w-full"
+                    placeholder="Enter your new password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Password must be at least 6 characters long
+                </p>
+              </div>
+
+              {/* Confirm New Password */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                  className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 w-full"
+                  placeholder="Confirm your new password"
+                />
+              </div>
+
+              {/* Status Message */}
+              {passwordChangeStatus && (
+                <div className={`p-3 rounded-md flex items-center ${
+                  passwordChangeStatus.type === 'success'
+                    ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                }`}>
+                  <AlertCircle size={20} className="mr-2" />
+                  {passwordChangeStatus.message}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+              >
+                <Save size={18} className="mr-2" />
+                Change Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

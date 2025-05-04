@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, ArrowUp, ArrowDown, Users, DollarSign, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useActivity } from '../context/ActivityContext';
 import { useNavigate } from 'react-router-dom';
+import ActivityLog from '../components/ActivityLog';
 
 const Dashboard = () => {
   // Get company data from company context
@@ -297,66 +299,70 @@ const Dashboard = () => {
 
       </div>
 
-      {/* Recent Employees */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-8 border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-5 border-b dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-semibold dark:text-white flex items-center">
-            <Users size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
-            Recent Employees
-          </h2>
-          <button
-            onClick={() => navigate('/salary-report')}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center"
-          >
-            View All Employees
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Employee ID
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Employee Name
-                </th>
-
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Net Salary
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {recentEmployees.length > 0 ? (
-                recentEmployees.map((employee, index) => (
-                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 py-1 px-2.5 rounded-md font-medium">{employee.employee_id}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {employee.name}
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="text-green-600 dark:text-green-400">₹{employee.net_salary?.toLocaleString() || 0}</span>
+      {/* Two-column layout for Recent Employees and Activity Log */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Recent Employees */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-5 border-b dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-lg font-semibold dark:text-white flex items-center">
+              <Users size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
+              Recent Employees
+            </h2>
+            <button
+              onClick={() => navigate('/salary-report')}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center"
+            >
+              View All Employees
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Employee ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Employee Name
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Net Salary
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {recentEmployees.length > 0 ? (
+                  recentEmployees.map((employee, index) => (
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 py-1 px-2.5 rounded-md font-medium">{employee.employee_id}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        {employee.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="text-green-600 dark:text-green-400">₹{employee.net_salary?.toLocaleString() || 0}</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="px-6 py-8 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <Users size={40} className="text-gray-300 dark:text-gray-600 mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400 mb-1">No employee data available</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">Upload an Excel file to see employee data here</p>
+                      </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" className="px-6 py-8 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <Users size={40} className="text-gray-300 dark:text-gray-600 mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 mb-1">No employee data available</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">Upload an Excel file to see employee data here</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Activity Log */}
+        <ActivityLog />
       </div>
     </div>
   );
