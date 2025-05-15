@@ -107,10 +107,19 @@ const UploadExcel = () => {
       // Log the activity directly
       if (logActivity) {
         try {
+          // Calculate the actual employee count from the data
+          const actualEmployeeCount = data.companies ?
+            data.companies.reduce((sum, company) => sum + (company.employees ? company.employees.length : 0), 0) : 0;
+
+          console.log('Uploaded data structure:', JSON.stringify(data, null, 2));
+          console.log('Company count:', data.companies ? data.companies.length : 0);
+          console.log('Actual employee count:', actualEmployeeCount);
+
           logActivity('UPLOAD_EXCEL', {
             fileName: file.name,
             month: selectedMonth,
-            employeeCount: data.companies ? data.companies.length : 0,
+            companyCount: data.companies ? data.companies.length : 0,
+            employeeCount: actualEmployeeCount,
             timestamp: new Date().toISOString()
           });
         } catch (error) {

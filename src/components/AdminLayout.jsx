@@ -50,7 +50,8 @@ const AdminLayout = ({ children }) => {
     {
       name: 'Analytics',
       path: '/admin/analytics',
-      icon: <BarChart3 size={20} />
+      icon: <BarChart3 size={20} />,
+      badge: 'WIP'
     },
     {
       name: 'Settings',
@@ -101,6 +102,12 @@ const AdminLayout = ({ children }) => {
                 <li key={item.name}>
                   <Link
                     to={item.path}
+                    onClick={() => {
+                      // Close sidebar on mobile when a menu item is clicked
+                      if (window.innerWidth < 768) {
+                        setIsSidebarOpen(false);
+                      }
+                    }}
                     className={`flex items-center p-3 rounded-md ${
                       location.pathname === item.path
                         ? darkMode
@@ -112,13 +119,26 @@ const AdminLayout = ({ children }) => {
                     }`}
                   >
                     <span className="mr-3">{item.icon}</span>
-                    <span>{item.name}</span>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{item.name}</span>
+                      {item.badge && (
+                        <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 </li>
               ))}
               <li>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    // Close sidebar on mobile when logout is clicked
+                    if (window.innerWidth < 768) {
+                      setIsSidebarOpen(false);
+                    }
+                    handleLogout();
+                  }}
                   className={`w-full flex items-center p-3 rounded-md ${
                     darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                   }`}

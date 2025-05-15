@@ -92,6 +92,12 @@ const Layout = ({ children }) => {
             <Link
               key={item.id}
               to={item.path}
+              onClick={() => {
+                // Close sidebar on mobile when a menu item is clicked
+                if (window.innerWidth < 1024) {
+                  setSidebarOpen(false);
+                }
+              }}
               className={`flex items-center px-4 py-3 mb-2 rounded-md ${
                 currentPage === item.id
                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'

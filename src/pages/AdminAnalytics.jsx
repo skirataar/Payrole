@@ -23,21 +23,87 @@ const AdminAnalytics = () => {
     if (isAdmin) {
       const companyData = getAllCompanies();
       const userData = getAllUsers();
-      
+
       if (companyData) setCompanies(companyData);
       if (userData) setUsers(userData.filter(u => u.role === 'company'));
     }
   }, [isAdmin, getAllCompanies, getAllUsers]);
 
+  // Helper function to get the employee count for a company
+  const getCompanyEmployeeCount = (company) => {
+    try {
+      // Get the most recent month's data
+      const monthlyDataEntries = Object.entries(company.monthlyData || {});
+
+      if (monthlyDataEntries.length === 0) {
+        // If no monthly data, use the company's employees array
+        return company.employees?.length || 0;
+      }
+
+      // Sort months by date (most recent first)
+      monthlyDataEntries.sort((a, b) => {
+        // Try to parse the month strings into dates
+        try {
+          // Format is typically "Month YYYY"
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+          const [monthA, yearA] = a[0].split(' ');
+          const [monthB, yearB] = b[0].split(' ');
+
+          const monthIndexA = monthNames.indexOf(monthA);
+          const monthIndexB = monthNames.indexOf(monthB);
+
+          if (yearA !== yearB) {
+            return parseInt(yearB) - parseInt(yearA);
+          }
+
+          return monthIndexB - monthIndexA;
+        } catch (e) {
+          // If parsing fails, use string comparison
+          return a[0].localeCompare(b[0]);
+        }
+      });
+
+      // Get the most recent month's data
+      const [month, mostRecentData] = monthlyDataEntries[0];
+
+      // Check if the data has the expected structure
+      if (mostRecentData.summary && mostRecentData.summary.total_employees) {
+        return mostRecentData.summary.total_employees;
+      }
+
+      // If we have companies data with employees
+      if (mostRecentData.companies && Array.isArray(mostRecentData.companies)) {
+        // Sum up all employees across all companies in this month
+        let totalEmployees = 0;
+
+        mostRecentData.companies.forEach(comp => {
+          if (comp.employees && Array.isArray(comp.employees)) {
+            totalEmployees += comp.employees.length;
+          }
+        });
+
+        return totalEmployees;
+      }
+
+      // Fallback to company's employees array
+      return company.employees?.length || 0;
+    } catch (error) {
+      console.error(`Error calculating employee count for ${company.name}:`, error);
+      return company.employees?.length || 0;
+    }
+  };
+
   // Calculate analytics data
-  const totalEmployees = companies.reduce((sum, company) => sum + (company.employees?.length || 0), 0);
+  const totalEmployees = companies.reduce((sum, company) => sum + getCompanyEmployeeCount(company), 0);
+
   const totalSalary = companies.reduce((sum, company) => {
     const monthlySalary = Object.values(company.monthlyData || {}).reduce((monthSum, monthData) => {
       return monthSum + (monthData.companies?.[0]?.summary?.total_salary || 0);
     }, 0);
     return sum + monthlySalary;
   }, 0);
-  
+
   const planDistribution = {
     basic: users.filter(u => u.subscription?.plan === 'basic').length,
     premium: users.filter(u => u.subscription?.plan === 'premium').length,
@@ -51,16 +117,72 @@ const AdminAnalytics = () => {
   };
 
   // Calculate average employees per company
-  const avgEmployeesPerCompany = companies.length > 0 
-    ? Math.round(totalEmployees / companies.length) 
+  const avgEmployeesPerCompany = companies.length > 0
+    ? Math.round(totalEmployees / companies.length)
     : 0;
 
   return (
     <div className={`p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'} min-h-screen`}>
-      <h1 className="text-2xl font-bold mb-8 flex items-center">
-        <BarChart3 size={24} className="text-blue-600 dark:text-blue-400 mr-2" />
-        Analytics Dashboard
-      </h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold flex items-center">
+          <BarChart3 size={24} className="text-blue-600 dark:text-blue-400 mr-2" />
+          Analytics Dashboard
+        </h1>
+
+        <button
+          onClick={() => {
+            console.log('All companies data:', companies);
+
+            // Log detailed employee counts for each company
+            companies.forEach(company => {
+              console.log(`Company: ${company.name}`);
+
+              // Log base employee count
+              console.log(`  Base employees array length: ${company.employees?.length || 0}`);
+
+              // Log monthly data
+              if (company.monthlyData) {
+                Object.entries(company.monthlyData).forEach(([month, data]) => {
+                  console.log(`  Month: ${month}`);
+
+                  // Log summary if available
+                  if (data.summary) {
+                    console.log(`    Summary total employees: ${data.summary.total_employees || 'N/A'}`);
+                  }
+
+                  // Log companies data
+                  if (data.companies) {
+                    data.companies.forEach((comp, i) => {
+                      console.log(`    Company ${i+1}: ${comp.name || 'Unnamed'}`);
+                      console.log(`      Employees: ${comp.employees?.length || 0}`);
+                    });
+                  }
+                });
+              }
+
+              // Log calculated employee count
+              console.log(`  Calculated employee count: ${getCompanyEmployeeCount(company)}`);
+              console.log('---');
+            });
+          }}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >
+          Debug Data Structure
+        </button>
+      </div>
+
+      {/* Work in Progress Banner */}
+      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8 rounded-md dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-600">
+        <div className="flex items-center">
+          <svg className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="font-bold">Work in Progress</p>
+            <p className="text-sm">The analytics feature is currently under development. Some data may not be displayed correctly.</p>
+          </div>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
@@ -112,8 +234,8 @@ const AdminAnalytics = () => {
           <div className="flex flex-col space-y-4">
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-blue-600 h-4 rounded-full" 
+                <div
+                  className="bg-blue-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (planDistribution.basic / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -121,8 +243,8 @@ const AdminAnalytics = () => {
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-purple-600 h-4 rounded-full" 
+                <div
+                  className="bg-purple-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (planDistribution.premium / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -130,8 +252,8 @@ const AdminAnalytics = () => {
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-indigo-600 h-4 rounded-full" 
+                <div
+                  className="bg-indigo-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (planDistribution.enterprise / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -149,8 +271,8 @@ const AdminAnalytics = () => {
           <div className="flex flex-col space-y-4">
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-green-600 h-4 rounded-full" 
+                <div
+                  className="bg-green-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (statusDistribution.active / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -158,8 +280,8 @@ const AdminAnalytics = () => {
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-red-600 h-4 rounded-full" 
+                <div
+                  className="bg-red-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (statusDistribution.inactive / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -167,8 +289,8 @@ const AdminAnalytics = () => {
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                <div 
-                  className="bg-yellow-600 h-4 rounded-full" 
+                <div
+                  className="bg-yellow-600 h-4 rounded-full"
                   style={{ width: `${users.length > 0 ? (statusDistribution.pending / users.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -207,18 +329,18 @@ const AdminAnalytics = () => {
                       {company.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {company.employees?.length || 0}
+                      {getCompanyEmployeeCount(company)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${totalEmployees > 0 ? ((company.employees?.length || 0) / totalEmployees) * 100 : 0}%` }}
+                          <div
+                            className="bg-blue-600 h-2.5 rounded-full"
+                            style={{ width: `${totalEmployees > 0 ? (getCompanyEmployeeCount(company) / totalEmployees) * 100 : 0}%` }}
                           ></div>
                         </div>
                         <span className="ml-4 text-sm text-gray-500 dark:text-gray-300">
-                          {totalEmployees > 0 ? Math.round(((company.employees?.length || 0) / totalEmployees) * 100) : 0}%
+                          {totalEmployees > 0 ? Math.round((getCompanyEmployeeCount(company) / totalEmployees) * 100) : 0}%
                         </span>
                       </div>
                     </td>
