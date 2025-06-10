@@ -6,7 +6,7 @@ import SubscriptionGate from './SubscriptionGate';
 import {
   Menu, X, BarChart3, Upload, FileText, Settings,
   Bell, User, ChevronDown, LogOut, HelpCircle, UserCog,
-  Moon, Sun
+  Moon, Sun, Users
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/logo.png';
@@ -28,7 +28,8 @@ const Layout = ({ children }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={20} />, path: '/dashboard' },
     { id: 'upload', label: 'Upload Excel', icon: <Upload size={20} />, path: '/upload' },
-    { id: 'salary-report', label: 'Salary Report', icon: <FileText size={20} />, path: '/salary-report' }
+    { id: 'salary-report', label: 'Salary Report', icon: <FileText size={20} />, path: '/salary-report' },
+    { id: 'employees', label: 'Employees', icon: <Users size={20} />, path: '/employees' }
   ];
 
   // Close user menu when clicking outside
@@ -59,6 +60,7 @@ const Layout = ({ children }) => {
     if (path === '/dashboard') return 'dashboard';
     if (path === '/upload') return 'upload';
     if (path === '/salary-report') return 'salary-report';
+    if (path === '/employees') return 'employees';
     if (path === '/settings') return 'settings';
     return '';
   };

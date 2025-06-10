@@ -6,8 +6,8 @@ import { useCompany } from '../context/CompanyContext';
 import { useActivity } from '../context/ActivityContext';
 
 const UploadExcel = () => {
-  const { user } = useAuth();
-  const { updateMonthData } = useCompany();
+  const { user, registerEmployee } = useAuth();
+  const { updateMonthData, addEmployee } = useCompany();
   const { logActivity } = useActivity();
 
   const [file, setFile] = useState(null);
@@ -98,6 +98,104 @@ const UploadExcel = () => {
             });
           }
         });
+      }
+
+      // Log the structure of the uploaded data for debugging
+      console.log('Full uploaded data structure:', data);
+
+      // Register employees from the Excel file
+      if (data && data.companies && data.companies.length > 0) {
+        // Define a function to process all employees from all companies
+        const processAllEmployees = async () => {
+          try {
+            console.log('Processing employees from Excel file...');
+
+            // Process each company's employees
+            for (const company of data.companies) {
+              console.log('Processing company:', company.name || 'Unknown Company');
+
+              if (company.employees && company.employees.length > 0) {
+                console.log(`Found ${company.employees.length} employees in company`);
+
+                // Log the first employee to see its structure
+                if (company.employees.length > 0) {
+                  console.log('Sample employee data structure:', company.employees[0]);
+                }
+
+                // Process each employee in the company
+                for (const employee of company.employees) {
+                  try {
+                    // Log the raw employee data to see what fields are available
+                    console.log('Raw employee data from Excel:', employee);
+
+                    // Check for employee ID in different possible formats based on your Excel column names
+                    const employeeId = employee.id || employee.employee_id || employee.card_no || '';
+                    const employeeName = employee.name || employee.employee_name || '';
+
+                    // Extract salary (Basic Rate) from the correct field
+                    const salary = employee.basic_rate || employee.daily_rate || employee.net_salary || 0;
+
+                    // Only process employees with ID and name
+                    if (employeeId && employeeName) {
+                      // Create employee object with proper data extraction
+                      // Make sure to use the correct field names from the Excel file
+                      const employeeData = {
+                        id: employeeId,
+                        name: employeeName,
+                        position: employee.position || employee.designation || '',
+                        department: employee.department || '',
+                        salary: salary,
+                        joinDate: new Date().toISOString().split('T')[0],
+                        password: 'PayPro1245',
+                        role: 'employee',
+                        companyId: user.companyId
+                      };
+
+                      console.log('Mapped employee data:', {
+                        id: employeeId,
+                        name: employeeName,
+                        salary: salary
+                      });
+
+                      // Log the extracted employee data for debugging
+                      console.log('Extracted employee data:', employeeData);
+
+                      // Try to register the employee in the auth system
+                      try {
+                        // Check if employee already exists before registering
+                        await registerEmployee(employeeData);
+                        console.log(`Registered employee: ${employeeId} - ${employeeName}`);
+                      } catch (error) {
+                        // If employee already exists, just log it
+                        if (error.message.includes('already exists')) {
+                          console.log(`Employee already exists: ${employeeId} - ${employeeName}`);
+                        } else {
+                          console.error(`Error registering employee ${employeeId}:`, error.message);
+                        }
+                      }
+
+                      // Add employee to company data
+                      addEmployee(employeeData);
+                    }
+                  } catch (employeeError) {
+                    console.error(`Error processing employee:`, employeeError);
+                    // Continue with next employee
+                  }
+                }
+
+                console.log(`Finished processing employees for company: ${company.name || 'Unknown Company'}`);
+              }
+            }
+
+            console.log('Completed employee registration from Excel file');
+          } catch (error) {
+            console.error('Error processing employees from Excel:', error);
+            // Continue with upload even if employee registration fails
+          }
+        };
+
+        // Execute the async function but don't wait for it
+        await processAllEmployees();
       }
 
       // Update state with the uploaded data for this specific month

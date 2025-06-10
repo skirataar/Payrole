@@ -68,6 +68,87 @@ const defaultUsers = [
       status: 'active',
       expiresAt: '2024-05-15' // Expiring soon (within 7 days of current date)
     }
+  },
+  // Employee users
+  {
+    id: '101',
+    password: 'PayPro1245',
+    name: 'John Doe',
+    role: 'employee',
+    companyId: 'comp1',
+    department: 'Engineering',
+    position: 'Manager',
+    joinDate: '2023-01-15',
+    salary: {
+      basic: 75000,
+      allowances: 7500,
+      deductions: 3000,
+      net: 79500
+    }
+  },
+  {
+    id: '102',
+    password: 'PayPro1245',
+    name: 'Jane Smith',
+    role: 'employee',
+    companyId: 'comp1',
+    department: 'Development',
+    position: 'Developer',
+    joinDate: '2023-02-01',
+    salary: {
+      basic: 65000,
+      allowances: 6000,
+      deductions: 2500,
+      net: 68500
+    }
+  },
+  {
+    id: '201',
+    password: 'PayPro1245',
+    name: 'Robert Johnson',
+    role: 'employee',
+    companyId: 'comp2',
+    department: 'Management',
+    position: 'Director',
+    joinDate: '2023-01-10',
+    salary: {
+      basic: 85000,
+      allowances: 8500,
+      deductions: 4000,
+      net: 89500
+    }
+  },
+  {
+    id: '202',
+    password: 'PayPro1245',
+    name: 'Emily Davis',
+    role: 'employee',
+    companyId: 'comp2',
+    department: 'Design',
+    position: 'Designer',
+    joinDate: '2023-03-15',
+    salary: {
+      basic: 60000,
+      allowances: 5000,
+      deductions: 2000,
+      net: 63000
+    }
+  },
+  {
+    id: '203',
+    password: 'PayPro1245',
+    name: 'Michael Wilson',
+    role: 'employee',
+    companyId: 'comp2',
+    department: 'Development',
+    position: 'Developer',
+    joinDate: '2023-02-20',
+    salary: {
+      basic: 62000,
+      allowances: 5500,
+      deductions: 2200,
+      net: 65300
+    }
   }
 ];
 
@@ -453,6 +534,194 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Employee login function
+  const loginEmployee = async (employeeId, password) => {
+    setError('');
+    try {
+      // Find the employee in mockUsers
+      const foundEmployee = mockUsers.find(u =>
+        u.id === employeeId &&
+        u.password === password &&
+        u.role === 'employee'
+      );
+
+      if (!foundEmployee) {
+        // Check if the employee ID exists but password is wrong
+        const employeeExists = mockUsers.some(u =>
+          u.id === employeeId &&
+          u.role === 'employee'
+        );
+
+        if (employeeExists) {
+          throw new Error('Invalid password');
+        } else {
+          throw new Error('Employee ID not found');
+        }
+      }
+
+      // Check if the company exists and is active
+      const companyUser = mockUsers.find(u =>
+        u.companyId === foundEmployee.companyId &&
+        u.role === 'company'
+      );
+
+      if (!companyUser) {
+        throw new Error('Company not found');
+      }
+
+      if (companyUser.subscription?.status !== 'active') {
+        throw new Error('Your company\'s subscription has expired');
+      }
+
+      // Remove password before storing user
+      const { password: _, ...employeeWithoutPassword } = foundEmployee;
+
+      // Load company data for the employee
+      const compData = mockCompanyData[employeeWithoutPassword.companyId];
+
+      // Check if there's attendance data for this employee in the company data
+      if (compData && compData.employees) {
+        const employeeData = compData.employees.find(emp => emp.id === employeeId);
+        if (employeeData && employeeData.attendance) {
+          // Add attendance data to the employee object
+          employeeWithoutPassword.attendance = parseFloat(employeeData.attendance);
+          console.log(`Found attendance data for employee ${employeeId}: ${employeeWithoutPassword.attendance}`);
+        }
+      }
+
+      // Store the updated user data
+      setUser(employeeWithoutPassword);
+      localStorage.setItem('user', JSON.stringify(employeeWithoutPassword));
+
+      // Store company data
+      if (compData) {
+        setCompanyData(compData);
+        localStorage.setItem('companyData', JSON.stringify(compData));
+      }
+
+      return employeeWithoutPassword;
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
+      throw err;
+    }
+  };
+
+  // Function to clear any auth errors
+  const clearError = () => {
+    setError('');
+  };
+
+  // Function to get all employee IDs
+  const getAllEmployeeIds = (companyId = null) => {
+    // Filter employees by role and optionally by company ID
+    let employees = mockUsers.filter(u => u.role === 'employee');
+
+    // If a company ID is provided, filter by that company ID
+    if (companyId) {
+      employees = employees.filter(u => u.companyId === companyId);
+      console.log(`Filtered employees for company ID ${companyId}: ${employees.length} found`);
+    }
+
+    return employees.map(employee => ({
+      id: employee.id,
+      name: employee.name,
+      companyId: employee.companyId,
+      companyName: mockUsers.find(u => u.companyId === employee.companyId && u.role === 'company')?.name || 'Unknown Company'
+    }));
+  };
+
+  // Function to register a new employee (for company admins)
+  const registerEmployee = (employeeData) => {
+    setError('');
+    try {
+      if (!user || user.role !== 'company') {
+        throw new Error('Only company accounts can register employees');
+      }
+
+      if (!employeeData.id || !employeeData.name) {
+        throw new Error('Employee ID and name are required');
+      }
+
+      // Check if employee ID already exists
+      const existingEmployee = mockUsers.find(u => u.id === employeeData.id);
+      if (existingEmployee) {
+        throw new Error('Employee ID already exists');
+      }
+
+      // Create new employee user with properly formatted salary and attendance
+      const newEmployee = {
+        ...employeeData,
+        // Ensure salary is stored as a float
+        salary: employeeData.salary ? parseFloat(employeeData.salary) : 0,
+        // Include attendance data if available, or default to 26
+        attendance: employeeData.attendance ? parseFloat(employeeData.attendance) : 26,
+        password: employeeData.password || 'PayPro1245', // Default password
+        role: 'employee',
+        companyId: user.companyId
+      };
+
+      console.log('Registering employee with salary:', newEmployee.salary);
+      console.log('Registering employee with attendance:', newEmployee.attendance);
+
+      // Add to mock users
+      mockUsers.push(newEmployee);
+
+      // Save updated mockUsers to localStorage
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+
+      console.log('New employee registered:', newEmployee);
+
+      return true;
+    } catch (err) {
+      setError(err.message || 'An error occurred during employee registration');
+      throw err;
+    }
+  };
+
+  // Function to get employees for the current company
+  const getCompanyEmployees = () => {
+    if (!user || !user.companyId) {
+      return [];
+    }
+
+    // Use the getAllEmployeeIds function with the current company ID
+    return getAllEmployeeIds(user.companyId);
+  };
+
+  // Function to remove all employees for a specific company (admin only)
+  const removeAllEmployees = (companyId) => {
+    setError('');
+    try {
+      // Check if user is admin
+      if (!user || user.role !== 'admin') {
+        throw new Error('Only admin accounts can remove all employees');
+      }
+
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
+      // Filter out all employees for the specified company
+      const updatedUsers = mockUsers.filter(u => !(u.role === 'employee' && u.companyId === companyId));
+
+      // Calculate how many employees were removed
+      const removedCount = mockUsers.length - updatedUsers.length;
+
+      // Update mockUsers
+      mockUsers = updatedUsers;
+
+      // Save updated mockUsers to localStorage
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+
+      console.log(`Removed ${removedCount} employees for company ID: ${companyId}`);
+
+      return removedCount;
+    } catch (err) {
+      setError(err.message || 'An error occurred while removing employees');
+      throw err;
+    }
+  };
+
   // Value object that will be passed to any consumer components
   const value = {
     user,
@@ -462,13 +731,20 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    loginEmployee,
+    registerEmployee,
     getAllCompanies,
     getAllUsers,
+    getAllEmployeeIds,
+    getCompanyEmployees,
+    removeAllEmployees,
     updateSubscription,
     deleteAccount,
     changePassword,
+    clearError,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin'
+    isAdmin: user?.role === 'admin',
+    isEmployee: user?.role === 'employee'
   };
 
   return (

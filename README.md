@@ -1,57 +1,82 @@
 # Payroll Pro
 
 ## Overview
-Payroll Pro is an all-in-one payroll management solution designed for HR teams handling multiple companies. It automates salary calculations, manages attendance data, and generates detailed reports—all from a clean, user-friendly interface. Built with scalability, security, and precision in mind, Payroll Pro simplifies complex payroll operations.
+Payroll Pro is a comprehensive payroll management solution designed for companies to efficiently handle employee salary calculations, attendance tracking, and payroll reporting. The application supports multiple company accounts with secure data isolation, automated salary calculations based on attendance, and detailed reporting capabilities. Built with modern web technologies and a focus on accuracy and user experience.
 
 ---
 
 ## Features
 
-- **Excel Data Import**: Seamlessly upload employee attendance data via Excel files
-- **Automated Salary Processing**: Calculate salaries based on attendance, daily rates, and configurable allowances
-- **Interactive Dashboard**: Get real-time insights and metrics at a glance
-- **Detailed Salary Reports**: Filter, sort, and export salary breakdowns
-- **Payment Tracking**: Mark employees as paid and monitor payment statuses
-- **Excel Export**: Download processed payroll data for offline use
-- **Activity Logging**: Track user actions with a detailed activity history for each company
-- **Multi-Company Support**: Each company has its own isolated account and data
-- **Secure Authentication**: Role-based login and registration system
-- **Subscription Plans**: Multiple plans with renewal tracking and feature restrictions
-- **Admin Panel**: View usage analytics, manage companies, and oversee subscriptions
-- **Custom Settings**: Tweak rates for VDA, ESI, PF, and more
-- **Dark Mode**: Toggle between light and dark UI themes for better accessibility
+### Core Functionality
+- **Excel Data Import**: Upload employee attendance data via Excel files with automatic data processing
+- **Automated Salary Calculations**: Calculate salaries based on daily rates, attendance (including float values), and statutory components
+- **Employee Management**: Add, edit, and manage employees with salary and attendance tracking
+- **Salary Reports**: Generate detailed salary reports with filtering, sorting, and export capabilities
+- **Payment Tracking**: Mark employees as paid/unpaid with toggle functionality
+
+### User Experience
+- **Multi-Account System**:
+  - **Company Accounts**: Manage employees, upload data, generate reports
+  - **Employee Accounts**: View personal salary details, attendance, and CTC breakdown
+  - **Admin Accounts**: Oversee all companies, manage subscriptions, and system administration
+- **Interactive Dashboards**: Real-time insights and metrics for companies and employees
+- **Dark Mode**: Toggle between light and dark themes for better accessibility
+- **Activity Logging**: Track user actions with detailed activity history for each company
+
+### Advanced Features
+- **Multi-Company Support**: Complete data isolation between different company accounts
+- **Subscription Management**: Multiple plans with renewal tracking and feature restrictions
+- **Employee Login System**: Employees can log in with company ID and view their salary details
+- **Admin Console**:
+  - Monitor company subscriptions
+  - Remove existing saved employees
+  - Manage system-wide settings
+- **Data Export**: Download processed payroll data to Excel format
+- **Secure Authentication**: Role-based login system with password management
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: React (Vite for fast dev builds)
-- **UI**: Tailwind CSS
-- **State Management**: React Hooks
-- **Backend**: FastAPI (Python)
-- **Data Handling**: Pandas for Excel and salary calculations
-- **Database**: SQLAlchemy ORM (SQL)
-- **Deployment**: Docker containerization for consistent environments
+- **Frontend**: React 18 with Vite for fast development builds
+- **UI Framework**: Tailwind CSS for responsive design
+- **State Management**: React Context API with custom hooks
+- **Routing**: React Router for navigation
+- **Icons**: Lucide React for consistent iconography
+- **Data Processing**: Client-side Excel processing with XLSX library
+- **Storage**: LocalStorage for data persistence
+- **Authentication**: Custom JWT-like authentication system
+- **Deployment**: Optimized for Vercel (frontend) and cloud services (backend)
 
 ---
 
 ## Salary Calculation Logic
 
-All attendance is treated as float values to ensure accurate payroll, including partial days.
+The application uses precise salary calculations that match industry standards and preserve float values for accuracy.
 
+### Core Calculation Formula
 - **Monthly Salary**: `Daily Rate × Attendance (float)`
-- **VDA**: Fixed at 135.32
-- **PL (Paid Leave)**: `((Daily Salary + VDA) / 30) × 1.5`
-- **Bonus**: `(Daily Salary + VDA) × Bonus %`
-- **ESI**:
-  - Employee: 0.75%
-  - Employer: 3.25%
-- **PF**:
-  - Employee: 12%
-  - Employer: 13%
-- **Deductions**: Includes Professional Tax and other fixed deductions
+- **VDA (Variable Dearness Allowance)**: Fixed at ₹135.32
+- **PL (Paid Leave)**: `((Daily Rate + VDA) / 30) × 1.5`
+- **Bonus**: `(Daily Rate + VDA) × Bonus %` (typically 8.33%)
 
-> **Note**: Attendance values like `23.38` are preserved and used throughout all calculations for accuracy.
+### Statutory Deductions
+- **ESI (Employee State Insurance)**:
+  - Employee Contribution: 0.75% of gross earnings
+  - Employer Contribution: 3.25% of gross earnings
+- **PF (Provident Fund)**:
+  - Employee Contribution: 12% of monthly salary
+  - Employer Contribution: 13% of monthly salary
+- **Professional Tax**: Fixed at ₹200
+
+### CTC Calculation
+- **Cost to Company (CTC)**: Gross Earnings + Employer PF + Employer ESI
+- **Net Salary**: Gross Earnings - Total Deductions
+
+### Key Features
+- **Float Precision**: Attendance values like `23.38` are preserved throughout all calculations
+- **Accurate Billing**: Decimal attendance ensures precise salary calculations for billing purposes
+- **Consistent Logic**: Same calculations used in both salary reports and employee dashboards
 
 ---
 
@@ -60,281 +85,256 @@ All attendance is treated as float values to ensure accurate payroll, including 
 ### Quick Start (TL;DR)
 
 ```bash
-# Frontend setup
-npm install
-npm run dev
+# Clone the repository
+git clone <repository-url>
+cd payroll-pro
 
-# Backend setup (in a separate terminal)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cd backend
-python main.py
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
 Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
+**Note**: This is a frontend-only application that uses localStorage for data persistence.
+
 ### Prerequisites
 
 - Node.js (v18+)
-- Python (v3.9+)
-- PostgreSQL (optional, for production database)
+- npm or yarn package manager
+- Modern web browser
 
-### Development Setup (Recommended)
+### Development Setup
 
-This method is the simplest and most reliable way to get started with development.
-
-1. **Clone the repo**
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/payroll-pro.git
+   git clone <repository-url>
    cd payroll-pro
    ```
 
-2. **Frontend Setup**
+2. **Install dependencies**
    ```bash
-   # Install Node.js dependencies
    npm install
+   ```
 
-   # Start the development server
+3. **Start the development server**
+   ```bash
    npm run dev
    ```
 
-3. **Backend Setup**
-   ```bash
-   # Create a Python virtual environment (recommended)
-   python -m venv venv
+4. **Access the application**
+   - Open [http://localhost:5173](http://localhost:5173) in your browser
 
-   # Activate the virtual environment
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
+### Build for Production
 
-   # Install dependencies
-   pip install -r requirements.txt
+```bash
+# Build the application
+npm run build
 
-   # Start the backend server
-   cd backend
-   python main.py
-   ```
+# Preview the production build
+npm run preview
+```
 
-4. **Access the Application**
-   - Frontend: [http://localhost:5173](http://localhost:5173)
-   - Backend API: [http://localhost:8000](http://localhost:8000)
+### Deployment Options
 
-### Alternative Setup: Using Conda
+#### Option 1: Vercel (Recommended)
 
-If you prefer using Conda for Python environment management:
-
-1. **Create and activate Conda environment**
-   ```bash
-   conda env create -f environment.yml
-   conda activate payroll-env
-   ```
-
-2. **Start the backend server**
-   ```bash
-   cd backend
-   python main.py
-   ```
-
-3. **In a separate terminal, start the frontend**
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-### Production Deployment Options
-
-#### Option 1: Manual Deployment (Recommended)
-
-This approach is more reliable and gives you better control:
-
-1. **Build the frontend**
+1. **Build the application**
    ```bash
    npm run build
    ```
 
-2. **Set up a PostgreSQL database** (if needed)
-   - Install PostgreSQL
-   - Create a database for the application
-   - Update your environment variables with the database connection string
+2. **Deploy to Vercel**
+   - Connect your GitHub repository to Vercel
+   - Vercel will automatically detect it's a Vite project
+   - Deploy with default settings
 
-3. **Start the production server**
+#### Option 2: Netlify
+
+1. **Build the application**
    ```bash
-   cd backend
-
-   # Set environment variables
-   export DATABASE_URL=postgresql://username:password@localhost:5432/payroll_db
-   export SECRET_KEY=your_secret_key
-
-   # Start the server
-   gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
+   npm run build
    ```
 
-4. **Access**: Open [http://localhost:8000](http://localhost:8000) in your browser
+2. **Deploy to Netlify**
+   - Drag and drop the `dist` folder to Netlify
+   - Or connect your GitHub repository for automatic deployments
 
-#### Option 2: Docker Deployment (Advanced)
+#### Option 3: Static Hosting
 
-Note: The Docker setup may require troubleshooting depending on your environment.
-
-1. **Prerequisites**
-   - Docker and Docker Compose installed
-   - Basic knowledge of Docker
-
-2. **Fix common Docker issues**
-   - Ensure Docker has sufficient resources (memory, CPU)
-   - Check if ports 8000 and 5432 are available
-   - Verify that the environment.yml file exists in the project root
-
-3. **Build and start the containers**
+1. **Build the application**
    ```bash
-   # Build the images first
-   docker-compose build
-
-   # Start the containers
-   docker-compose up -d
+   npm run build
    ```
 
-4. **Troubleshooting Docker issues**
-   ```bash
-   # Check container logs
-   docker-compose logs app
-
-   # Check if containers are running
-   docker-compose ps
-
-   # Restart containers
-   docker-compose restart
-   ```
-
-5. **Access**: Open [http://localhost:8000](http://localhost:8000) in your browser
-
-#### Option 3: Cloud Deployment
-
-For detailed instructions on deploying to cloud platforms:
-
-1. **Render.com Deployment**
-   - Frontend: Deploy as a Static Site
-   - Backend: Deploy as a Web Service
-   - Database: Use Render PostgreSQL or external database
-
-2. **Vercel + Railway Deployment**
-   - Frontend: Deploy to Vercel
-   - Backend: Deploy to Railway
-   - Database: Use Railway PostgreSQL
-
-For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md)
+2. **Serve the dist folder**
+   - Upload the contents of the `dist` folder to any static hosting service
+   - Configure the server to serve `index.html` for all routes (SPA routing)
 
 ### Troubleshooting Common Issues
 
-#### Backend Issues
+#### Development Issues
 
 1. **Port already in use**
    ```bash
-   # Error: Address already in use
-   # Solution: Kill the process using the port
-   lsof -i :8000  # Find the process ID
+   # Error: Port 5173 is already in use
+   # Solution: Kill the process or use a different port
+   lsof -i :5173  # Find the process ID (macOS/Linux)
    kill -9 <PID>  # Kill the process
+
+   # Or start on a different port
+   npm run dev -- --port 3000
    ```
 
-2. **Database connection issues**
-   ```bash
-   # Check if PostgreSQL is running
-   sudo service postgresql status
-
-   # Start PostgreSQL if it's not running
-   sudo service postgresql start
-   ```
-
-3. **Missing dependencies**
-   ```bash
-   # Reinstall all dependencies
-   pip install -r requirements.txt --force-reinstall
-   ```
-
-#### Frontend Issues
-
-1. **Node modules issues**
+2. **Node modules issues**
    ```bash
    # Remove node_modules and reinstall
-   rm -rf node_modules
+   rm -rf node_modules package-lock.json
    npm install
    ```
 
-2. **Vite build errors**
+3. **Build errors**
    ```bash
-   # Clear cache and rebuild
-   npm run clean  # If available
+   # Clear Vite cache and rebuild
+   rm -rf node_modules/.vite
    npm run build
    ```
 
-#### Docker Issues
+#### Data Issues
 
-1. **Container fails to start**
-   ```bash
-   # Check logs for detailed error messages
-   docker-compose logs app
+1. **Lost data after browser refresh**
+   - Data is stored in localStorage and persists across sessions
+   - Check browser developer tools > Application > Local Storage
 
-   # Common fixes:
-   # 1. Increase Docker memory allocation in Docker Desktop settings
-   # 2. Make sure all required files exist (environment.yml, etc.)
-   # 3. Check if ports are available
-   ```
+2. **Excel upload not working**
+   - Ensure the Excel file has the correct column structure
+   - Check browser console for error messages
+   - Verify file size is reasonable (< 10MB recommended)
 
-2. **Database connection issues in Docker**
-   ```bash
-   # Check if the database container is running
-   docker-compose ps
-
-   # Restart the database container
-   docker-compose restart db
-
-   # Check database logs
-   docker-compose logs db
-   ```
-
-3. **Volume permission issues**
-   ```bash
-   # Fix permissions on volumes
-   docker-compose down -v  # Remove volumes
-   docker-compose up -d    # Recreate volumes with proper permissions
-   ```
+3. **Calculations not matching**
+   - Verify attendance values are preserved as floats
+   - Check that daily rates are entered correctly
+   - Review the salary calculation logic in the documentation
 
 ---
 
-## Usage
+## Usage Guide
 
-### For Company Users
+### Getting Started
 
-1. **Register/Login**: Create a company account or log in
-2. **Subscription**: Pick a plan (Basic, Standard, Premium)
-3. **Dashboard**:
-   - Visualize attendance and salary metrics
-   - View recent activity logs for your account
-4. **Upload Excel**: Import attendance data with month selection
-5. **Salary Report**:
-   - View, filter, and export salary reports
-   - Mark employees as paid
-   - Download reports to Excel
-6. **Settings**:
-   - Customize salary parameters
-   - Toggle dark mode
-   - Reset or clear uploaded data without affecting the account
-   - Change account password securely
+1. **Homepage**: Choose between Company Login or Employee Login
+2. **Registration**: Create a new company account with subscription plan selection
+3. **Login**: Access your account with email and password
 
-### For Admins
+### For Company Accounts
 
-1. **Admin Dashboard**: Manage companies and view usage
-2. **Subscriptions**: Update or monitor subscription statuses
-3. **Analytics**: View overall system stats
-4. **System Settings**: Configure default values and thresholds
+#### Dashboard
+- View real-time metrics and statistics
+- Monitor recent activity logs
+- Access quick navigation to all features
+
+#### Employee Management
+- Add new employees manually with salary and attendance data
+- View all employees in a structured table
+- Edit employee information and salary details
+- Remove employees when needed
+
+#### Excel Upload
+- Upload attendance data via Excel files
+- Select the month for data processing
+- Automatic employee extraction and salary calculation
+- Support for float attendance values (e.g., 23.5 days)
+
+#### Salary Reports
+- Generate detailed salary reports with all calculations
+- Filter employees by paid/unpaid status
+- Mark employees as paid with toggle functionality
+- Export reports to Excel format
+- View detailed breakdown of earnings and deductions
+
+#### Settings
+- Toggle between light and dark mode
+- Change account password securely
+- Clear activity logs
+- Remove salary data without affecting the account
+
+### For Employee Accounts
+
+#### Login Process
+- Use Company ID and Employee ID to log in
+- Default password: "PayPro1245" (can be changed)
+
+#### Employee Dashboard
+- View personal salary breakdown with detailed calculations
+- See daily wage rate and how monthly salary is calculated
+- Review attendance data (preserved as float values)
+- View CTC (Cost to Company) with employer contributions
+- Access earnings and deductions breakdown with formulas
+
+#### Settings
+- Change password from default
+- View personal information
+- Toggle dark mode
+
+### For Admin Accounts
+
+#### Admin Dashboard
+- Monitor all registered companies
+- View subscription statuses and expiration dates
+- Manage company accounts
+
+#### Company Management
+- Edit subscription plans and expiration dates
+- Remove all employees for a specific company
+- Monitor system usage and activity
+
+#### System Administration
+- Oversee all user accounts
+- Manage subscription enforcement
+- Monitor application usage
 
 ---
+
+## Key Features Explained
+
+### Multi-Account System
+- **Company Accounts**: Full payroll management capabilities
+- **Employee Accounts**: Personal salary and attendance viewing
+- **Admin Accounts**: System-wide management and oversight
+- **Data Isolation**: Each company's data is completely separate
+
+### Excel Integration
+- **Smart Upload**: Automatically extracts employee data from Excel files
+- **Float Precision**: Preserves decimal attendance values (e.g., 23.38 days)
+- **Column Mapping**: Flexible mapping of Excel columns to system fields
+- **Batch Processing**: Handles multiple employees in a single upload
+
+### Salary Calculations
+- **Industry Standard**: Follows standard payroll calculation methods
+- **Transparent Formulas**: All calculations are visible to users
+- **Accurate Deductions**: Proper ESI, PF, and tax calculations
+- **CTC Breakdown**: Clear display of employer contributions
+
+### Data Management
+- **LocalStorage**: Client-side data persistence
+- **Activity Logging**: Track all user actions with timestamps
+- **Export Capabilities**: Download reports in Excel format
+- **Secure Authentication**: Role-based access control
 
 ## Changelog
 
-### v1.3.0 (May 2025)
+### v1.4.0 (Current)
+- **Employee Login System**: Employees can now log in and view their salary details
+- **Enhanced Employee Management**: Add, edit, and manage employees with float salary support
+- **Improved Calculations**: Exact match with salary report calculations in employee dashboard
+- **Admin Employee Management**: Remove all employees for specific companies
+- **Better Data Isolation**: Proper separation of employee data by company
+- **Float Attendance Support**: Preserve decimal attendance values throughout the system
+- **Enhanced UI/UX**: Improved user interface with better navigation and feedback
+
+### v1.3.0 (Previous)
 - Activity logging system for tracking user actions
 - Company-specific activity history
 - Password change functionality in settings
@@ -343,16 +343,15 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
 - Performance optimizations
 - Bug fixes and UI improvements
 
-### v1.2.0 (April 2025)
+### v1.2.0
 - Multi-company support
 - Role-based authentication
 - Subscription plan enforcement
 - Excel export feature
 - Admin panel integration
 - Codebase cleanup and optimization
-- Docker deployment support
 
-### v1.1.0 (March 2025)
+### v1.1.0
 - Dark mode support
 - Single company UI streamlining
 - UI spacing and alignment fixes
@@ -361,6 +360,19 @@ For detailed cloud deployment instructions, see [CLOUD_DEPLOYMENT.md](CLOUD_DEPL
 
 ---
 
+## Contributing
+
+This project is actively maintained. If you encounter any issues or have suggestions for improvements:
+
+1. Check the troubleshooting section above
+2. Review the changelog for recent updates
+3. Ensure you're using the latest version
+
 ## License
-This is proprietary software developed for internal company use. All rights reserved.
+
+This is proprietary software developed for payroll management. All rights reserved.
+
+---
+
+**Payroll Pro** - Simplifying payroll management with precision and ease.
 

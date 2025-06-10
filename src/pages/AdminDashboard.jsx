@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, Building, Calendar, DollarSign, CheckCircle, XCircle, Edit, Trash } from 'lucide-react';
+import { Users, Building, Calendar, DollarSign, CheckCircle, XCircle, Edit, Trash, UserX } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const AdminDashboard = () => {
-  const { user, getAllCompanies, getAllUsers, updateSubscription, loading } = useAuth();
+  const { user, getAllCompanies, getAllUsers, updateSubscription, removeAllEmployees, loading } = useAuth();
+  const { removeAllEmployees: removeCompanyEmployees } = useCompany();
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRemoveEmployeesModalOpen, setIsRemoveEmployeesModalOpen] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState({
     plan: 'basic',
     status: 'active',
@@ -64,6 +67,51 @@ const AdminDashboard = () => {
       alert('Subscription updated successfully');
     } else {
       alert('Failed to update subscription');
+    }
+  };
+
+  const handleRemoveEmployees = () => {
+    if (!selectedCompany) {
+      alert('No company selected');
+      return;
+    }
+
+    try {
+      // Open confirmation modal
+      setIsRemoveEmployeesModalOpen(true);
+    } catch (error) {
+      console.error('Error preparing to remove employees:', error);
+      alert('An error occurred while preparing to remove employees');
+    }
+  };
+
+  const confirmRemoveEmployees = () => {
+    if (!selectedCompany) {
+      alert('No company selected');
+      return;
+    }
+
+    try {
+      // Remove employees from both contexts
+      const authRemoved = removeAllEmployees(selectedCompany.id);
+      const companyRemoved = removeCompanyEmployees(selectedCompany.id);
+
+      // Close the modal
+      setIsRemoveEmployeesModalOpen(false);
+
+      // Show success message
+      if (typeof authRemoved === 'number') {
+        alert(`Successfully removed ${authRemoved} employees from company ${selectedCompany.name}`);
+      } else {
+        alert('Employees removed successfully');
+      }
+
+      // Reset selected company
+      setSelectedCompany(null);
+    } catch (error) {
+      console.error('Error removing employees:', error);
+      alert(`Error: ${error.message || 'An error occurred while removing employees'}`);
+      setIsRemoveEmployeesModalOpen(false);
     }
   };
 
@@ -185,12 +233,25 @@ const AdminDashboard = () => {
                         {user.subscription?.expiresAt || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        <button
-                          onClick={() => handleEditSubscription(company)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                        >
-                          <Edit size={18} />
-                        </button>
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => handleEditSubscription(company)}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            title="Edit Subscription"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              handleRemoveEmployees();
+                            }}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            title="Remove All Employees"
+                          >
+                            <UserX size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -265,6 +326,38 @@ const AdminDashboard = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Employees Confirmation Modal */}
+      {isRemoveEmployeesModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className="flex items-center mb-4 text-red-600 dark:text-red-400">
+              <UserX size={24} className="mr-2" />
+              <h3 className="text-lg font-medium">Remove All Employees</h3>
+            </div>
+
+            <div className="mb-6">
+              <p className="mb-4">Are you sure you want to remove <strong>ALL</strong> employees from company <strong>{selectedCompany?.name}</strong>?</p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">This action cannot be undone!</p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsRemoveEmployeesModalOpen(false)}
+                className={`px-4 py-2 rounded-md ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveEmployees}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Remove All Employees
               </button>
             </div>
           </div>

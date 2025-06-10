@@ -14,7 +14,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const { darkMode } = useTheme();
-  const { user, login, error: authError } = useAuth();
+  const { user, login, error: authError, clearError } = useAuth();
   const { logActivity } = useActivity();
   const navigate = useNavigate();
 
@@ -23,6 +23,12 @@ const Login = () => {
 
   // Only redirect after successful login, not on initial load
   const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  // Clear any errors when component mounts
+  useEffect(() => {
+    clearError();
+    setLoginError('');
+  }, [clearError]);
 
   useEffect(() => {
     // Only redirect if we've attempted a login (shouldRedirect is true)
@@ -76,14 +82,16 @@ const Login = () => {
     <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
       <div className={`max-w-md w-full space-y-8 p-10 rounded-xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="text-center">
-          <div className="mx-auto flex justify-center items-center h-20 w-20 mb-4">
-            <img src={logo} alt="Payroll Pro Logo" className="h-20 w-auto" />
-          </div>
+          <Link to="/" className="inline-block">
+            <div className="mx-auto flex justify-center items-center h-20 w-20 mb-4">
+              <img src={logo} alt="Payroll Pro Logo" className="h-20 w-auto" />
+            </div>
+          </Link>
           <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Payroll Pro
           </h1>
           <h2 className={`mt-4 text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Sign in to your account
+            Company Sign In
           </h2>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Enter your credentials to access the payroll system
@@ -214,6 +222,17 @@ const Login = () => {
             <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               By signing up, you agree to our Terms of Service and Privacy Policy
             </p>
+            <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+              <Link
+                to="/"
+                className={`inline-flex items-center text-blue-600 hover:text-blue-500 font-medium`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Home
+              </Link>
+            </div>
           </div>
         </div>
       </div>

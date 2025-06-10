@@ -12,6 +12,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
+import HomePage from './pages/HomePage';
+import EmployeeLogin from './pages/EmployeeLogin';
+import EmployeeDashboard from './pages/EmployeeDashboard';
+import EmployeeManagement from './pages/EmployeeManagement';
 
 // Import layouts
 import Layout from './components/Layout';
@@ -32,15 +36,20 @@ function App() {
             <BrowserRouter>
               <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<Login />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/employee-login" element={<EmployeeLogin />} />
               <Route path="/register" element={<Register />} />
 
               {/* Company Routes */}
               <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
               <Route path="/upload" element={<Layout><UploadExcel /></Layout>} />
               <Route path="/salary-report" element={<Layout><SalaryReport /></Layout>} />
+              <Route path="/employees" element={<Layout><EmployeeManagement /></Layout>} />
               <Route path="/settings" element={<Layout><Settings /></Layout>} />
+
+              {/* Employee Routes */}
+              <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
