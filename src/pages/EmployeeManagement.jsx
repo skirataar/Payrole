@@ -5,7 +5,8 @@ import { useActivity } from '../context/ActivityContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   User, Search, Plus, Edit, Trash2, X, Check,
-  AlertCircle, UserPlus, FileText, DollarSign, RefreshCw
+  AlertCircle, UserPlus, FileText, DollarSign, RefreshCw,
+  Calendar, Phone, Mail, MapPin, Briefcase, Clock, Award
 } from 'lucide-react';
 
 const EmployeeManagement = () => {
@@ -22,15 +23,35 @@ const EmployeeManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formError, setFormError] = useState('');
+  const [expandedSections, setExpandedSections] = useState({
+    personal: true,
+    job: true,
+    attendance: false
+  });
 
-  // Form state
+  // Enhanced form state with new fields
   const [formData, setFormData] = useState({
+    // Personal Information
     id: '',
     name: '',
+    dateOfBirth: '',
+    gender: '',
+    email: '',
+    phone: '',
+    workLocation: '',
+    
+    // Job Details
     position: '',
     department: '',
+    joinDate: new Date().toISOString().split('T')[0],
+    employmentType: '',
+    supervisor: '',
     salary: '',
-    joinDate: new Date().toISOString().split('T')[0]
+    
+    // Attendance and Leave
+    leaveBalance: 20,
+    shiftDetails: '',
+    overtimeHours: 0
   });
 
   // Handle form input changes
@@ -38,8 +59,18 @@ const EmployeeManagement = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'salary' ? (value === '' ? '' : parseFloat(value)) : value
+      [name]: name === 'salary' || name === 'leaveBalance' || name === 'overtimeHours' 
+        ? (value === '' ? '' : parseFloat(value)) 
+        : value
     });
+  };
+
+  // Toggle section expansion
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   // Filter employees based on search term
@@ -47,18 +78,34 @@ const EmployeeManagement = () => {
     employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (employee.position && employee.position.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (employee.department && employee.department.toLowerCase().includes(searchTerm.toLowerCase()))
+    (employee.department && employee.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (employee.email && employee.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Reset form
   const resetForm = () => {
     setFormData({
+      // Personal Information
       id: '',
       name: '',
+      dateOfBirth: '',
+      gender: '',
+      email: '',
+      phone: '',
+      workLocation: '',
+      
+      // Job Details
       position: '',
       department: '',
+      joinDate: new Date().toISOString().split('T')[0],
+      employmentType: '',
+      supervisor: '',
       salary: '',
-      joinDate: new Date().toISOString().split('T')[0]
+      
+      // Attendance and Leave
+      leaveBalance: 20,
+      shiftDetails: '',
+      overtimeHours: 0
     });
     setFormError('');
     setEditingEmployee(null);
@@ -68,12 +115,27 @@ const EmployeeManagement = () => {
   const handleEdit = (employee) => {
     setEditingEmployee(employee);
     setFormData({
+      // Personal Information
       id: employee.id,
       name: employee.name,
+      dateOfBirth: employee.dateOfBirth || '',
+      gender: employee.gender || '',
+      email: employee.email || '',
+      phone: employee.phone || '',
+      workLocation: employee.workLocation || '',
+      
+      // Job Details
       position: employee.position || '',
       department: employee.department || '',
+      joinDate: employee.joinDate || new Date().toISOString().split('T')[0],
+      employmentType: employee.employmentType || '',
+      supervisor: employee.supervisor || '',
       salary: employee.salary || '',
-      joinDate: employee.joinDate || new Date().toISOString().split('T')[0]
+      
+      // Attendance and Leave
+      leaveBalance: employee.leaveBalance || 20,
+      shiftDetails: employee.shiftDetails || '',
+      overtimeHours: employee.overtimeHours || 0
     });
     setShowAddForm(true);
     setFormError('');
@@ -311,87 +373,196 @@ const EmployeeManagement = () => {
           </p>
         </div>
 
-        {/* Employee list */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Employee ID
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Position
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Department
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Salary
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {employee.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {employee.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {employee.position || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {employee.department || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      ₹{employee.salary ? parseFloat(employee.salary).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(employee)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                          title="Edit employee"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(employee.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          title="Delete employee"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+        {/* Employee list - Enhanced Card Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredEmployees.length > 0 ? (
+            filteredEmployees.map((employee) => (
+              <div key={employee.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                {/* Employee Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold">{employee.name}</h3>
+                      <p className="text-blue-100 text-sm">{employee.id}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(employee)}
+                        className="text-blue-100 hover:text-white transition-colors"
+                        title="Edit employee"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(employee.id)}
+                        className="text-red-200 hover:text-red-100 transition-colors"
+                        title="Delete employee"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employee Details */}
+                <div className="p-4 space-y-4">
+                  {/* Personal Information */}
+                  <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <User size={14} className="mr-1" />
+                      Personal Information
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {employee.gender && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Gender:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.gender}</span>
+                        </div>
+                      )}
+                      {employee.dateOfBirth && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">DOB:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">
+                            {new Date(employee.dateOfBirth).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {employee.workLocation && (
+                        <div className="col-span-2">
+                          <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.workLocation}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  {(employee.email || employee.phone) && (
+                    <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                        <Phone size={14} className="mr-1" />
+                        Contact
+                      </h4>
+                      <div className="space-y-1 text-xs">
+                        {employee.email && (
+                          <div className="flex items-center text-gray-700 dark:text-gray-300">
+                            <Mail size={12} className="mr-1 text-gray-500" />
+                            {employee.email}
+                          </div>
+                        )}
+                        {employee.phone && (
+                          <div className="flex items-center text-gray-700 dark:text-gray-300">
+                            <Phone size={12} className="mr-1 text-gray-500" />
+                            {employee.phone}
+                          </div>
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                    {searchTerm ? 'No employees found matching your search' : 'No employees added yet'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    </div>
+                  )}
+
+                  {/* Job Details */}
+                  <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <Briefcase size={14} className="mr-1" />
+                      Job Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {employee.position && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Position:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.position}</span>
+                        </div>
+                      )}
+                      {employee.department && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Department:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.department}</span>
+                        </div>
+                      )}
+                      {employee.employmentType && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.employmentType}</span>
+                        </div>
+                      )}
+                      {employee.joinDate && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Joined:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">
+                            {new Date(employee.joinDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {employee.supervisor && (
+                        <div className="col-span-2">
+                          <span className="text-gray-500 dark:text-gray-400">Supervisor:</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300">{employee.supervisor}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Financial & Attendance */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <Award size={14} className="mr-1" />
+                      Financial & Attendance
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {employee.salary && (
+                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                          <span className="text-gray-500 dark:text-gray-400">Salary:</span>
+                          <div className="text-green-700 dark:text-green-400 font-semibold">
+                            ₹{parseFloat(employee.salary).toLocaleString('en-IN')}
+                          </div>
+                        </div>
+                      )}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                        <span className="text-gray-500 dark:text-gray-400">Leave Balance:</span>
+                        <div className="text-blue-700 dark:text-blue-400 font-semibold">
+                          {employee.leaveBalance || 20} days
+                        </div>
+                      </div>
+                      {employee.overtimeHours > 0 && (
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                          <span className="text-gray-500 dark:text-gray-400">Overtime:</span>
+                          <div className="text-orange-700 dark:text-orange-400 font-semibold">
+                            {employee.overtimeHours} hrs
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {employee.shiftDetails && (
+                      <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Shift:</span>
+                        <div className="text-gray-700 dark:text-gray-300 mt-1">{employee.shiftDetails}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full">
+              <div className="text-center py-12">
+                <User size={48} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  {searchTerm ? 'No employees found' : 'No employees added yet'}
+                </h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  {searchTerm ? 'Try adjusting your search terms' : 'Add your first employee to get started'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Add/Edit Employee Form Modal */}
+      {/* Enhanced Add/Edit Employee Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            <div className="flex justify-between items-center border-b dark:border-gray-700 p-4">
+          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className="flex justify-between items-center border-b dark:border-gray-700 p-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h2 className="text-xl font-bold">
                 {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
               </h2>
@@ -414,122 +585,339 @@ const EmployeeManagement = () => {
             )}
 
             <form onSubmit={handleSubmit} className="p-4">
-              <div className="mb-4">
-                <label htmlFor="id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employee ID*</label>
-                <input
-                  type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
-                  onChange={handleInputChange}
-                  disabled={!!editingEmployee}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white disabled:bg-gray-800 disabled:text-gray-500'
-                      : 'bg-white border-gray-300 disabled:bg-gray-100 disabled:text-gray-500'
-                  } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter employee ID"
-                />
+              {/* Personal Information Section */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('personal')}
+                  className="flex items-center w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-3"
+                >
+                  <User className="mr-2 text-blue-600 dark:text-blue-400" />
+                  <span className="font-semibold">Personal Information</span>
+                  <span className="ml-auto">{expandedSections.personal ? '−' : '+'}</span>
+                </button>
+                
+                {expandedSections.personal && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div>
+                      <label htmlFor="id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employee ID*</label>
+                      <input
+                        type="text"
+                        id="id"
+                        name="id"
+                        value={formData.id}
+                        onChange={handleInputChange}
+                        disabled={!!editingEmployee}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white disabled:bg-gray-800 disabled:text-gray-500'
+                            : 'bg-white border-gray-300 disabled:bg-gray-100 disabled:text-gray-500'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter employee ID"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium mb-1">Full Name*</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter employee name"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="dateOfBirth" className="block text-sm font-medium mb-1">Date of Birth</label>
+                      <input
+                        type="date"
+                        id="dateOfBirth"
+                        name="dateOfBirth"
+                        value={formData.dateOfBirth}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="gender" className="block text-sm font-medium mb-1">Gender</label>
+                      <select
+                        id="gender"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter email address"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label htmlFor="workLocation" className="block text-sm font-medium mb-1">Work Location</label>
+                      <input
+                        type="text"
+                        id="workLocation"
+                        name="workLocation"
+                        value={formData.workLocation}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter work location"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium mb-1">
-                  Full Name*
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'bg-white border-gray-300'
-                  } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter employee name"
-                />
+              {/* Job Details Section */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('job')}
+                  className="flex items-center w-full text-left p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-3"
+                >
+                  <Briefcase className="mr-2 text-green-600 dark:text-green-400" />
+                  <span className="font-semibold">Job Details</span>
+                  <span className="ml-auto">{expandedSections.job ? '−' : '+'}</span>
+                </button>
+                
+                {expandedSections.job && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div>
+                      <label htmlFor="position" className="block text-sm font-medium mb-1">Job Title</label>
+                      <input
+                        type="text"
+                        id="position"
+                        name="position"
+                        value={formData.position}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter job title"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="department" className="block text-sm font-medium mb-1">Department</label>
+                      <input
+                        type="text"
+                        id="department"
+                        name="department"
+                        value={formData.department}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter department"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="joinDate" className="block text-sm font-medium mb-1">Joining Date</label>
+                      <input
+                        type="date"
+                        id="joinDate"
+                        name="joinDate"
+                        value={formData.joinDate}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="employmentType" className="block text-sm font-medium mb-1">Employment Type</label>
+                      <select
+                        id="employmentType"
+                        name="employmentType"
+                        value={formData.employmentType}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Intern">Intern</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="supervisor" className="block text-sm font-medium mb-1">Supervisor/Manager</label>
+                      <input
+                        type="text"
+                        id="supervisor"
+                        name="supervisor"
+                        value={formData.supervisor}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter supervisor name"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="salary" className="block text-sm font-medium mb-1">Salary (₹)*</label>
+                      <input
+                        type="number"
+                        id="salary"
+                        name="salary"
+                        value={formData.salary}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter salary amount"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="position" className="block text-sm font-medium mb-1">
-                    Position
-                  </label>
-                  <input
-                    type="text"
-                    id="position"
-                    name="position"
-                    value={formData.position}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300'
-                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    placeholder="Enter position"
-                  />
-                </div>
+              {/* Attendance and Leave Section */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('attendance')}
+                  className="flex items-center w-full text-left p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-3"
+                >
+                  <Clock className="mr-2 text-purple-600 dark:text-purple-400" />
+                  <span className="font-semibold">Attendance and Leave</span>
+                  <span className="ml-auto">{expandedSections.attendance ? '−' : '+'}</span>
+                </button>
+                
+                {expandedSections.attendance && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div>
+                      <label htmlFor="leaveBalance" className="block text-sm font-medium mb-1">Leave Balance (Days)</label>
+                      <input
+                        type="number"
+                        id="leaveBalance"
+                        name="leaveBalance"
+                        value={formData.leaveBalance}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter leave balance"
+                        min="0"
+                        max="365"
+                      />
+                    </div>
 
-                <div>
-                  <label htmlFor="department" className="block text-sm font-medium mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    id="department"
-                    name="department"
-                    value={formData.department}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300'
-                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    placeholder="Enter department"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label htmlFor="overtimeHours" className="block text-sm font-medium mb-1">Overtime Hours</label>
+                      <input
+                        type="number"
+                        id="overtimeHours"
+                        name="overtimeHours"
+                        value={formData.overtimeHours}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter overtime hours"
+                        min="0"
+                        step="0.5"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="salary" className="block text-sm font-medium mb-1">
-                    Salary (₹)*
-                  </label>
-                  <input
-                    type="number"
-                    id="salary"
-                    name="salary"
-                    value={formData.salary}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300'
-                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    placeholder="Enter salary amount"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="joinDate" className="block text-sm font-medium mb-1">
-                    Join Date
-                  </label>
-                  <input
-                    type="date"
-                    id="joinDate"
-                    name="joinDate"
-                    value={formData.joinDate}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300'
-                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  />
-                </div>
+                    <div className="md:col-span-2">
+                      <label htmlFor="shiftDetails" className="block text-sm font-medium mb-1">Shift Details</label>
+                      <textarea
+                        id="shiftDetails"
+                        name="shiftDetails"
+                        value={formData.shiftDetails}
+                        onChange={handleInputChange}
+                        rows="3"
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300'
+                        } focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter shift details (e.g., 9 AM - 6 PM, Monday to Friday)"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {!editingEmployee && (
