@@ -11,14 +11,13 @@ import {
 const EmployeeManagement = () => {
   const { darkMode } = useTheme();
   const { user, registerEmployee, getCompanyEmployees: getAuthEmployees } = useAuth();
-  const { companyData, addEmployee, updateEmployee, deleteEmployee, setUploadedData, getCompanyEmployees } = useCompany();
+  const { companyData, addEmployee, updateEmployee, deleteEmployee, setUploadedData, employees } = useCompany();
   const { logActivity } = useActivity();
 
   // State to track if refresh is in progress
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // State for employee list and form
-  const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -33,99 +32,6 @@ const EmployeeManagement = () => {
     salary: '',
     joinDate: new Date().toISOString().split('T')[0]
   });
-
-  // Load employees for the current company
-  useEffect(() => {
-    if (companyData && user?.companyId) {
-      // Get employees from both sources
-      const companyContextEmployees = getCompanyEmployees();
-      const authContextEmployees = getAuthEmployees();
-
-      console.log(`Company ID: ${user.companyId}`);
-      console.log(`CompanyContext: ${companyContextEmployees.length} employees`);
-      console.log(`AuthContext: ${authContextEmployees.length} employees`);
-
-      // Combine employees from both sources, removing duplicates
-      const combinedEmployees = [...companyContextEmployees];
-
-      // Add employees from auth context that aren't already in the list
-      authContextEmployees.forEach(authEmp => {
-        if (!combinedEmployees.some(emp => emp.id === authEmp.id)) {
-          combinedEmployees.push({
-            id: authEmp.id,
-            name: authEmp.name,
-            position: authEmp.position || '',
-            department: authEmp.department || '',
-            salary: authEmp.salary || 0,
-            attendance: authEmp.attendance || 26,
-            joinDate: authEmp.joinDate || new Date().toISOString().split('T')[0],
-            role: 'employee',
-            companyId: user.companyId
-          });
-        }
-      });
-
-      // Filter to only include employees for the current company
-      const filteredEmployees = combinedEmployees.filter(emp => emp.companyId === user.companyId);
-
-      // Log the employees for debugging
-      console.log(`Combined and filtered: ${filteredEmployees.length} employees for company ID: ${user.companyId}`);
-
-      // Set the employees in state
-      setEmployees(filteredEmployees);
-
-      // Log the first few employees for debugging
-      if (filteredEmployees.length > 0) {
-        console.log('Sample employees:');
-        filteredEmployees.slice(0, 3).forEach((emp, index) => {
-          console.log(`Employee ${index + 1}:`, emp);
-        });
-      }
-
-      // Register employees in the auth system if they're not already registered
-      // Using a separate function to handle registration
-      const registerAllEmployees = async () => {
-        for (const employee of filteredEmployees) {
-          try {
-            // Create employee object for registration
-            const employeeData = {
-              id: employee.id,
-              name: employee.name,
-              position: employee.position || '',
-              department: employee.department || '',
-              salary: employee.salary || 0,
-              attendance: employee.attendance || 26,
-              joinDate: employee.joinDate || new Date().toISOString().split('T')[0],
-              password: 'PayPro1245',
-              role: 'employee',
-              companyId: user.companyId
-            };
-
-            // Try to register the employee
-            try {
-              await registerEmployee(employeeData);
-              console.log(`Registered employee: ${employee.id} - ${employee.name}`);
-            } catch (error) {
-              // If employee already exists, just ignore the error
-              if (!error.message.includes('already exists')) {
-                console.error(`Error registering employee ${employee.id}:`, error.message);
-              }
-            }
-          } catch (error) {
-            console.error(`Error processing employee ${employee.id}:`, error);
-          }
-        }
-      };
-
-      // Call the registration function but don't wait for it
-      registerAllEmployees().catch(error => {
-        console.error('Error registering employees:', error);
-      });
-    } else {
-      // Initialize empty array if no company data exists
-      setEmployees([]);
-    }
-  }, [companyData, user, getCompanyEmployees, getAuthEmployees]);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -350,7 +256,7 @@ const EmployeeManagement = () => {
             <button
               onClick={() => {
                 // Get employees from both sources
-                const companyContextEmployees = getCompanyEmployees();
+                const companyContextEmployees = employees;
                 const authContextEmployees = getAuthEmployees();
 
                 console.log('Company Data:', companyData);
@@ -411,7 +317,7 @@ const EmployeeManagement = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  ID
+                  Employee ID
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Name
@@ -509,9 +415,7 @@ const EmployeeManagement = () => {
 
             <form onSubmit={handleSubmit} className="p-4">
               <div className="mb-4">
-                <label htmlFor="id" className="block text-sm font-medium mb-1">
-                  Employee ID*
-                </label>
+                <label htmlFor="id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employee ID*</label>
                 <input
                   type="text"
                   id="id"

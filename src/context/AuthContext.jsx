@@ -722,6 +722,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Verify password for the current user
+  const verifyPassword = (password) => {
+    if (!user) return false;
+    const foundUser = mockUsers.find(u => u.id === user.id);
+    return foundUser && foundUser.password === password;
+  };
+
   // Value object that will be passed to any consumer components
   const value = {
     user,
@@ -744,7 +751,8 @@ export const AuthProvider = ({ children }) => {
     clearError,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
-    isEmployee: user?.role === 'employee'
+    isEmployee: user?.role === 'employee',
+    verifyPassword,
   };
 
   return (

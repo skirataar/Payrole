@@ -14,21 +14,15 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const { darkMode } = useTheme();
-  const { user, login, error: authError, clearError } = useAuth();
+  const { user, login } = useAuth();
   const { logActivity } = useActivity();
   const navigate = useNavigate();
 
-  // Use the error from auth context or local error
-  const error = authError || loginError;
+  // Use only the local error for this form
+  const error = loginError;
 
   // Only redirect after successful login, not on initial load
   const [shouldRedirect, setShouldRedirect] = useState(false);
-
-  // Clear any errors when component mounts
-  useEffect(() => {
-    clearError();
-    setLoginError('');
-  }, [clearError]);
 
   useEffect(() => {
     // Only redirect if we've attempted a login (shouldRedirect is true)
@@ -43,17 +37,17 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoginError('');
+    setLoginError("");
+    setIsLoading(true);
 
     // Basic validation
     if (!email || !password) {
       setLoginError('Please enter both email and password');
+      setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
-
       // Call the login function from auth context
       const loggedInUser = await login(email, password);
 
@@ -72,10 +66,21 @@ const Login = () => {
 
       // Set shouldRedirect to true to trigger the redirect in useEffect
       setShouldRedirect(true);
+      setIsLoading(false);
     } catch (err) {
       setLoginError(err.message || 'An error occurred during login. Please try again.');
       setIsLoading(false);
     }
+  };
+
+  // Clear error when user types
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    setLoginError("");
+  };
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setLoginError("");
   };
 
   return (
@@ -121,7 +126,7 @@ const Login = () => {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   className={`appearance-none rounded-md relative block w-full pl-10 pr-3 py-2 border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 placeholder-gray-500 text-gray-900'} focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="name@company.com"
                 />
@@ -143,7 +148,7 @@ const Login = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   className={`appearance-none rounded-md relative block w-full pl-10 pr-10 py-2 border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300 placeholder-gray-500 text-gray-900'} focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="••••••••"
                 />

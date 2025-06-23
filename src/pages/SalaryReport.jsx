@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Download, Filter, CheckCircle, Calendar, XCircle } from 'lucide-react';
+import { Search, Download, Filter, CheckCircle, Calendar, XCircle, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import { useActivity } from '../context/ActivityContext';
 import * as XLSX from 'xlsx';
 
 const SalaryReport = () => {
-  const { user } = useAuth();
+  const { user, verifyPassword } = useAuth();
   const { uploadedData } = useCompany();
   const { logActivity } = useActivity();
 
@@ -16,6 +16,11 @@ const SalaryReport = () => {
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   // Use the uploaded data from the company context
   const effectiveData = uploadedData;
@@ -571,6 +576,37 @@ const SalaryReport = () => {
     }
   };
 
+  // Function to delete all salary report data for this company
+  const handleDeleteAllData = () => {
+    setDeletePassword("");
+    setDeleteError("");
+    setDeleteSuccess("");
+    setDeleteConfirm(false);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setDeleteError("");
+    if (!verifyPassword(deletePassword)) {
+      setDeleteError("Incorrect password.");
+      return;
+    }
+    if (!deleteConfirm) {
+      setDeleteError("Please confirm deletion by checking the box.");
+      return;
+    }
+    // Delete data from localStorage
+    localStorage.removeItem(`uploadedData_${companyId}`);
+    localStorage.removeItem(`paidEmployees_${companyId}`);
+    localStorage.removeItem(`lastUploadMonth_${companyId}`);
+    localStorage.removeItem(`lastUploadTime_${companyId}`);
+    // Optionally clear more keys if needed
+    setDeleteSuccess("All salary report data deleted successfully.");
+    setDeleteError("");
+    // Optionally, reset state or reload page
+    window.location.reload();
+  };
+
   return (
     <div className="p-6 dark:bg-gray-900 dark:text-white">
       <h1 className="text-2xl font-bold mb-6">Salary Report</h1>
@@ -675,6 +711,17 @@ const SalaryReport = () => {
             <Download size={18} className="mr-2" />
             Export to Excel
           </button>
+
+          {/* Delete All Data Button (only for company/admin users) */}
+          {(user?.role === 'company' || user?.role === 'admin') && (
+            <button
+              onClick={handleDeleteAllData}
+              className="flex items-center px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              <Trash2 size={18} className="mr-2" />
+              Delete All Data
+            </button>
+          )}
         </div>
       </div>
 
@@ -834,6 +881,56 @@ const SalaryReport = () => {
                 {selectedEmployee?.status === "Paid" ? "Mark as Unpaid" : "Confirm Payment"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Data Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full dark:text-white">
+            <h3 className="text-lg font-medium mb-4 text-red-600">Delete All Salary Report Data</h3>
+            {deleteSuccess ? (
+              <div className="mb-4 text-green-600">{deleteSuccess}</div>
+            ) : (
+              <>
+                <p className="mb-2">This will permanently delete <strong>all salary report data</strong> for this company. This action cannot be undone.</p>
+                <p className="mb-4 text-red-500">Are you sure you want to continue?</p>
+                <label className="block mb-2 font-medium">Enter your password to confirm:</label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={e => setDeletePassword(e.target.value)}
+                  className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 w-full mb-2 dark:bg-gray-700 dark:text-white"
+                  placeholder="Password"
+                />
+                <div className="flex items-center mb-4">
+                  <input
+                    type="checkbox"
+                    id="delete-confirm"
+                    checked={deleteConfirm}
+                    onChange={e => setDeleteConfirm(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <label htmlFor="delete-confirm" className="text-sm">Yes, I am sure I want to delete all data.</label>
+                </div>
+                {deleteError && <div className="mb-2 text-red-600">{deleteError}</div>}
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                  >
+                    Delete All Data
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

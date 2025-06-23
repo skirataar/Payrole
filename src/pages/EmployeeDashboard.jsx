@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { User, FileText, Calendar, DollarSign } from 'lucide-react';
+import { User, FileText, Calendar, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const EmployeeDashboard = () => {
   const { user, logout } = useAuth();
   const { darkMode } = useTheme();
   const navigate = useNavigate();
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Get the daily rate from user data
   const dailyRate = user?.salary || 0;
@@ -18,6 +19,47 @@ const EmployeeDashboard = () => {
   console.log('User attendance data:', user?.attendance);
   const attendance = user?.attendance || 26;
   console.log('Using attendance value:', attendance);
+
+  // Generate attendance data for the calendar
+  const generateAttendanceData = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    
+    const attendanceData = [];
+    
+    // Fill in empty days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      attendanceData.push({ day: null, status: 'empty' });
+    }
+    
+    // Fill in the days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const dayOfWeek = date.getDay();
+      
+      // Skip weekends (Saturday = 6, Sunday = 0)
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        attendanceData.push({ day, status: 'weekend' });
+      } else {
+        // Generate random attendance status for demo purposes
+        // In real app, this would come from actual attendance data
+        const random = Math.random();
+        let status;
+        if (random < 0.8) {
+          status = 'present'; // 80% present
+        } else if (random < 0.9) {
+          status = 'half-day'; // 10% half day
+        } else {
+          status = 'absent'; // 10% absent
+        }
+        attendanceData.push({ day, status });
+      }
+    }
+    
+    return attendanceData;
+  }, [currentDate]);
 
   // Calculate salary components exactly as specified in the README.md
   // Monthly Salary: Daily Rate × Attendance (float)
@@ -103,6 +145,71 @@ const EmployeeDashboard = () => {
     logout();
     navigate('/');
   };
+
+  const navigateMonth = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const navigateToMonth = (month, year) => {
+    setCurrentDate(new Date(year, month, 1));
+  };
+
+  const goToCurrentMonth = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleKeyDown = (e, direction) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      navigateMonth(direction);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'present':
+        return 'bg-green-500';
+      case 'absent':
+        return 'bg-red-500';
+      case 'half-day':
+        return 'bg-yellow-500';
+      case 'weekend':
+        return 'bg-gray-300 dark:bg-gray-600';
+      default:
+        return 'bg-transparent';
+    }
+  };
+
+  const getStatusTooltip = (status, day) => {
+    if (!day) return '';
+    switch (status) {
+      case 'present':
+        return `Present on ${day}`;
+      case 'absent':
+        return `Absent on ${day}`;
+      case 'half-day':
+        return `Half day on ${day}`;
+      case 'weekend':
+        return `Weekend on ${day}`;
+      default:
+        return '';
+    }
+  };
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
@@ -281,12 +388,133 @@ const EmployeeDashboard = () => {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Attendance</h3>
+              <h3 className="text-lg font-semibold">Attendance Calendar</h3>
               <Calendar size={24} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="space-y-2">
+            
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigateMonth('prev')}
+                  onKeyDown={(e) => handleKeyDown(e, 'prev')}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Previous month"
+                  tabIndex={0}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <button
+                  onClick={() => navigateMonth('next')}
+                  onKeyDown={(e) => handleKeyDown(e, 'next')}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Next month"
+                  tabIndex={0}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Month Dropdown */}
+                <select
+                  value={currentDate.getMonth()}
+                  onChange={(e) => navigateToMonth(parseInt(e.target.value), currentDate.getFullYear())}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {monthNames.map((month, index) => (
+                    <option key={month} value={index}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Year Dropdown */}
+                <select
+                  value={currentDate.getFullYear()}
+                  onChange={(e) => navigateToMonth(currentDate.getMonth(), parseInt(e.target.value))}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Today Button */}
+                <button
+                  onClick={goToCurrentMonth}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Go to current month"
+                >
+                  Today
+                </button>
+              </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="mb-4">
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {generateAttendanceData.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`
+                      aspect-square rounded-md border border-gray-200 dark:border-gray-600
+                      ${item.day ? 'cursor-pointer hover:opacity-80' : ''}
+                      ${getStatusColor(item.status)}
+                      ${item.status === 'empty' ? 'bg-transparent' : ''}
+                      flex items-center justify-center text-xs font-medium
+                      ${item.status === 'present' || item.status === 'absent' || item.status === 'half-day' 
+                        ? 'text-white' 
+                        : item.status === 'weekend' 
+                          ? 'text-gray-600 dark:text-gray-300' 
+                          : 'text-gray-400'
+                      }
+                    `}
+                    title={getStatusTooltip(item.status, item.day)}
+                  >
+                    {item.day}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span>Present</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded"></div>
+                <span>Absent</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                <span>Half Day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                <span>Weekend</span>
+              </div>
+            </div>
+
+            {/* Attendance Summary */}
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
               <div className="flex justify-between font-bold text-lg">
-                <span className="text-gray-700 dark:text-gray-300">Attendance:</span>
+                <span className="text-gray-700 dark:text-gray-300">Total Attendance:</span>
                 <span>{parseFloat(employeeData.attendance).toFixed(2)} days</span>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">

@@ -9,7 +9,7 @@ export const useCompany = () => useContext(CompanyContext);
 
 // Provider component
 export const CompanyProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, registerEmployee } = useAuth();
   const [currentCompanyId, setCurrentCompanyId] = useState('default');
 
   // State to store uploaded data with localStorage persistence
@@ -58,9 +58,12 @@ export const CompanyProvider = ({ children }) => {
     }
   }, [uploadedData, currentCompanyId]);
 
-  // Function to update data for a specific month
+  // Update month data with new uploaded data
   const updateMonthData = (data, month) => {
-    if (!month) return;
+    if (!data || !data.companies) return;
+
+    console.log('Processing uploaded data for month:', month);
+    let totalEmployees = 0;
 
     setUploadedData(prevData => {
       // Create a copy of the previous data
@@ -77,71 +80,108 @@ export const CompanyProvider = ({ children }) => {
       // Also update the current companies data for backward compatibility
       newData.companies = data.companies || [];
 
-      // Extract employees from the uploaded data and add them to the employees array
-      if (data.companies && Array.isArray(data.companies)) {
-        // Initialize employees array if it doesn't exist
-        if (!newData.employees) {
-          newData.employees = [];
-        }
-
-        // Process each company's employees
-        data.companies.forEach(company => {
-          if (company.employees && Array.isArray(company.employees)) {
-            company.employees.forEach(employee => {
-              // Extract employee ID and name
-              const employeeId = employee.id || employee.employee_id || employee.card_no || '';
-              const employeeName = employee.name || employee.employee_name || '';
-
-              // Only process if we have an ID and name
-              if (employeeId && employeeName) {
-                // Check if this employee already exists in our list
-                const existingIndex = newData.employees.findIndex(emp => emp.id === employeeId);
-
-                // Extract salary from the correct field
-                const salary = employee.basic_rate || employee.daily_rate || employee.net_salary || 0;
-
-                // Extract attendance from the correct field
-                const attendance = employee.attendance_days || employee.attendance || employee.total || 26;
-
-                // Log the attendance value for debugging
-                console.log(`Extracted attendance for ${employeeId}: ${attendance}`);
-
-                if (existingIndex === -1) {
-                  // Add new employee
-                  newData.employees.push({
-                    id: employeeId,
-                    name: employeeName,
-                    position: employee.position || employee.designation || '',
-                    department: employee.department || '',
-                    salary: salary,
-                    attendance: parseFloat(attendance), // Store as float
-                    joinDate: employee.joinDate || new Date().toISOString().split('T')[0],
-                    role: 'employee',
-                    companyId: currentCompanyId
-                  });
-
-                  console.log(`Added employee from Excel: ${employeeId} - ${employeeName}`);
-                } else {
-                  // Update existing employee
-                  newData.employees[existingIndex] = {
-                    ...newData.employees[existingIndex],
-                    name: employeeName,
-                    salary: salary,
-                    attendance: parseFloat(attendance) // Store as float
-                  };
-
-                  console.log(`Updated existing employee from Excel: ${employeeId} - ${employeeName}`);
-                }
-              }
-            });
-          }
-        });
-
-        console.log(`Total employees after processing: ${newData.employees.length}`);
+      // Initialize employees array if it doesn't exist
+      if (!newData.employees) {
+        newData.employees = [];
       }
+
+      data.companies.forEach(company => {
+        if (company.employees && Array.isArray(company.employees)) {
+          company.employees.forEach(employee => {
+            const employeeId = employee.employee_id || employee.id;
+            const employeeName = employee.name;
+            
+            if (employeeId && employeeName) {
+              // Extract attendance from the correct field
+              const attendance = employee.attendance || employee.attendance_days || employee.total || 26;
+              console.log(`Extracted attendance for ${employeeId}: ${attendance}`);
+
+              // Prefer monthly_salary for Employee Management salary field
+              const salary = employee.monthly_salary || employee.salary || employee.basic_rate || employee.daily_rate || employee.net_salary || 0;
+
+              // Extract join date from the correct field
+              const joinDate = employee.joinDate || employee.join_date || new Date().toISOString().split('T')[0];
+
+              // Check if employee already exists
+              const existingIndex = newData.employees.findIndex(emp => emp.id === employeeId);
+
+              if (existingIndex >= 0) {
+                // Update existing employee
+                newData.employees[existingIndex] = {
+                  ...newData.employees[existingIndex],
+                  name: employeeName,
+                  salary: salary,
+                  attendance: attendance,
+                  joinDate: joinDate,
+                  position: employee.position || '',
+                  department: employee.department || ''
+                };
+                console.log(`Updated existing employee from Excel: ${employeeId} - ${employeeName}`);
+              } else {
+                // Add new employee
+                newData.employees.push({
+                  id: employeeId,
+                  name: employeeName,
+                  position: employee.position || '',
+                  department: employee.department || '',
+                  salary: salary,
+                  attendance: attendance,
+                  joinDate: joinDate,
+                  role: 'employee',
+                  companyId: user?.companyId || 'default'
+                });
+                console.log(`Added employee from Excel: ${employeeId} - ${employeeName}`);
+              }
+
+              totalEmployees++;
+            }
+          });
+        }
+      });
+
+      console.log(`Total employees after processing: ${totalEmployees}`);
+
+      // Register all employees for login access
+      registerEmployeesForLogin(newData.employees);
 
       return newData;
     });
+
+    saveCompanyData(uploadedData);
+  };
+
+  // Register employees for login access
+  const registerEmployeesForLogin = async (employees) => {
+    if (!employees || !Array.isArray(employees)) return;
+
+    console.log('Registering employees for login access...');
+    
+    for (const employee of employees) {
+      try {
+        // Create employee data for registration
+        const employeeData = {
+          id: employee.id,
+          name: employee.name,
+          position: employee.position || '',
+          department: employee.department || '',
+          salary: employee.salary || 0,
+          attendance: employee.attendance || 26,
+          joinDate: employee.joinDate || new Date().toISOString().split('T')[0],
+          password: 'PayPro1245', // Default password for all employees
+          role: 'employee',
+          companyId: user?.companyId || 'default'
+        };
+
+        // Register the employee in the auth system
+        await registerEmployee(employeeData);
+        console.log(`Registered employee for login: ${employee.id} - ${employee.name}`);
+      } catch (error) {
+        // If employee already exists, just ignore the error
+        if (!error.message.includes('already exists')) {
+          console.error(`Error registering employee ${employee.id} for login:`, error.message);
+        }
+      }
+    }
   };
 
   // Function to add a new employee
@@ -337,7 +377,8 @@ export const CompanyProvider = ({ children }) => {
     updateEmployee,
     deleteEmployee,
     getCompanyEmployees,
-    removeAllEmployees
+    removeAllEmployees,
+    employees: uploadedData.employees || []
   };
 
   return (

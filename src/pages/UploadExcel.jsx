@@ -100,6 +100,9 @@ const UploadExcel = () => {
         });
       }
 
+      // Ensure employees are extracted for Employee Management
+      updateMonthData(data, selectedMonth);
+
       // Log the structure of the uploaded data for debugging
       console.log('Full uploaded data structure:', data);
 

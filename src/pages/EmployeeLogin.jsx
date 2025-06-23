@@ -16,18 +16,9 @@ const EmployeeLogin = () => {
   const [employeeList, setEmployeeList] = useState([]);
 
   const { darkMode } = useTheme();
-  const { loginEmployee, user, error: authError, clearError, getAllEmployeeIds } = useAuth();
+  const { loginEmployee, user, getAllEmployeeIds } = useAuth();
   const { logActivity } = useActivity();
   const navigate = useNavigate();
-
-  // Use the error from auth context or local error
-  const displayError = error || authError;
-
-  // Clear any errors when component mounts
-  useEffect(() => {
-    clearError();
-    setError('');
-  }, [clearError]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -59,6 +50,17 @@ const EmployeeLogin = () => {
   const selectEmployeeId = (id) => {
     setEmployeeId(id);
     setShowEmployeeList(false);
+  };
+
+  // Clear error when user starts typing
+  const handleEmployeeIdChange = (e) => {
+    setEmployeeId(e.target.value);
+    if (error) setError('');
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -118,10 +120,10 @@ const EmployeeLogin = () => {
             </p>
           </div>
 
-          {displayError && (
+          {error && (
             <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md flex items-center">
               <AlertCircle size={20} className="mr-2 flex-shrink-0" />
-              <span>{displayError}</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -138,7 +140,7 @@ const EmployeeLogin = () => {
                   id="employeeId"
                   type="text"
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
+                  onChange={handleEmployeeIdChange}
                   className={`w-full pl-10 pr-10 py-2 border rounded-md focus:ring-2 focus:outline-none ${
                     darkMode
                       ? 'bg-gray-700 border-gray-600 focus:ring-blue-600'
@@ -216,7 +218,7 @@ const EmployeeLogin = () => {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
                     darkMode
                       ? 'bg-gray-700 border-gray-600 focus:ring-blue-600'
