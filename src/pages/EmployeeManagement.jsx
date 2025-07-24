@@ -6,7 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import {
   User, Search, Plus, Edit, Trash2, X, Check,
   AlertCircle, UserPlus, FileText, DollarSign, RefreshCw,
-  Calendar, Phone, Mail, MapPin, Briefcase, Clock, Award
+  Calendar, Phone, Mail, MapPin, Briefcase, Clock, Award,
+  ChevronUp, ChevronDown, Filter
 } from 'lucide-react';
 
 const EmployeeManagement = () => {
@@ -18,8 +19,13 @@ const EmployeeManagement = () => {
   // State to track if refresh is in progress
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // State for employee list and form
+  // Enhanced search and sort state
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [showSortOptions, setShowSortOptions] = useState(false);
+  
+  // State for employee list and form
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formError, setFormError] = useState('');
@@ -73,14 +79,131 @@ const EmployeeManagement = () => {
     }));
   };
 
-  // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee =>
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (employee.position && employee.position.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (employee.department && employee.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (employee.email && employee.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Enhanced search function - searches across ALL employee fields
+  const searchEmployee = (employee, searchTerm) => {
+    if (!searchTerm) return true;
+    
+    const term = searchTerm.toLowerCase();
+    
+    // Search in all text fields
+    const searchableFields = [
+      employee.name,
+      employee.id,
+      employee.position,
+      employee.department,
+      employee.email,
+      employee.phone,
+      employee.workLocation,
+      employee.gender,
+      employee.employmentType,
+      employee.supervisor,
+      employee.shiftDetails,
+      employee.dateOfBirth,
+      employee.joinDate,
+      employee.salary?.toString(),
+      employee.leaveBalance?.toString(),
+      employee.overtimeHours?.toString()
+    ];
+    
+    return searchableFields.some(field => 
+      field && field.toLowerCase().includes(term)
+    );
+  };
+
+  // Enhanced sorting function
+  const sortEmployees = (employees, field, direction) => {
+    return [...employees].sort((a, b) => {
+      let aValue = a[field];
+      let bValue = b[field];
+      
+      // Handle numeric fields
+      if (field === 'salary' || field === 'leaveBalance' || field === 'overtimeHours') {
+        aValue = parseFloat(aValue) || 0;
+        bValue = parseFloat(bValue) || 0;
+      }
+      
+      // Handle date fields
+      if (field === 'dateOfBirth' || field === 'joinDate') {
+        aValue = aValue ? new Date(aValue).getTime() : 0;
+        bValue = bValue ? new Date(bValue).getTime() : 0;
+      }
+      
+      // Handle string fields
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      // Handle null/undefined values
+      if (!aValue && aValue !== 0) aValue = '';
+      if (!bValue && bValue !== 0) bValue = '';
+      
+      if (direction === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+  };
+
+  // Filter and sort employees
+  const filteredAndSortedEmployees = sortEmployees(
+    employees.filter(employee => searchEmployee(employee, searchTerm)),
+    sortField,
+    sortDirection
   );
+
+  // Handle sort field change
+  const handleSortChange = (field) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field with ascending direction
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setShowSortOptions(false);
+  };
+
+  // Get sort options for dropdown
+  const sortOptions = [
+    { value: 'name', label: 'Name' },
+    { value: 'id', label: 'Employee ID' },
+    { value: 'position', label: 'Position' },
+    { value: 'department', label: 'Department' },
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'workLocation', label: 'Work Location' },
+    { value: 'gender', label: 'Gender' },
+    { value: 'employmentType', label: 'Employment Type' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'salary', label: 'Salary' },
+    { value: 'leaveBalance', label: 'Leave Balance' },
+    { value: 'overtimeHours', label: 'Overtime Hours' },
+    { value: 'joinDate', label: 'Join Date' },
+    { value: 'dateOfBirth', label: 'Date of Birth' }
+  ];
+
+  // Get current sort option label
+  const getCurrentSortLabel = () => {
+    const option = sortOptions.find(opt => opt.value === sortField);
+    return option ? option.label : 'Name';
+  };
+
+  // Close sort dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSortOptions && !event.target.closest('.sort-dropdown')) {
+        setShowSortOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortOptions]);
 
   // Reset form
   const resetForm = () => {
@@ -347,22 +470,124 @@ const EmployeeManagement = () => {
           </div>
         </div>
 
-        {/* Search bar */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+        {/* Enhanced Search and Sort Controls */}
+        <div className="mb-6 space-y-4">
+          {/* Search bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search across all employee fields (name, ID, department, email, phone, location, etc.)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`pl-10 pr-4 py-2 w-full rounded-md border ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:ring-blue-500 focus:border-blue-500`}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search employees by name, ID, position, or department"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`pl-10 pr-4 py-2 w-full rounded-md border ${
-              darkMode
-                ? 'bg-gray-700 border-gray-600 text-white'
-                : 'bg-white border-gray-300 text-gray-900'
-            } focus:ring-blue-500 focus:border-blue-500`}
-          />
+
+          {/* Sort Controls */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortOptions(!showSortOptions)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                } transition-colors`}
+              >
+                <Filter size={16} />
+                <span>Sort by: {getCurrentSortLabel()}</span>
+                {sortDirection === 'asc' ? (
+                  <ChevronUp size={16} />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+              </button>
+
+              {/* Sort Options Dropdown */}
+              {showSortOptions && (
+                <div className={`sort-dropdown absolute top-full left-0 mt-1 w-64 rounded-md shadow-lg z-10 ${
+                  darkMode ? 'bg-gray-700 border border-gray-600' : 'bg-white border border-gray-300'
+                }`}>
+                  <div className="py-1 max-h-60 overflow-y-auto">
+                    {sortOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleSortChange(option.value)}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 ${
+                          sortField === option.value
+                            ? 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300'
+                            : darkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{option.label}</span>
+                          {sortField === option.value && (
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {sortDirection === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sort Direction Toggle */}
+            <button
+              onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              } transition-colors`}
+              title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
+            >
+              {sortDirection === 'asc' ? (
+                <>
+                  <ChevronUp size={16} />
+                  <span>A-Z</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={16} />
+                  <span>Z-A</span>
+                </>
+              )}
+            </button>
+
+            {/* Clear Search */}
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                } transition-colors`}
+              >
+                <X size={16} />
+                <span>Clear Search</span>
+              </button>
+            )}
+
+            {/* Results Count */}
+            <div className={`text-sm ${
+              darkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {filteredAndSortedEmployees.length} of {employees.length} employees
+              {searchTerm && ` matching "${searchTerm}"`}
+            </div>
+          </div>
         </div>
 
         {/* Note about employee login */}
@@ -375,8 +600,8 @@ const EmployeeManagement = () => {
 
         {/* Employee list - Enhanced Card Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredEmployees.length > 0 ? (
-            filteredEmployees.map((employee) => (
+          {filteredAndSortedEmployees.length > 0 ? (
+            filteredAndSortedEmployees.map((employee) => (
               <div key={employee.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {/* Employee Header */}
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">

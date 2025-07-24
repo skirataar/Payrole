@@ -5,12 +5,32 @@ Payroll Pro is a comprehensive payroll management solution designed for companie
 
 ---
 
+## 🚀 Latest Features (v1.1.0)
+
+### ✨ Enhanced Employee Management System
+- **Comprehensive Employee Profiles**: Complete employee information with personal, job, and attendance details
+- **Card-Based Display**: Beautiful, responsive employee cards showing all information at a glance
+- **Organized Sections**: 
+  - **Personal Information**: ID, Name, DOB, Gender, Email, Phone, Work Location
+  - **Job Details**: Position, Department, Join Date, Employment Type, Supervisor, Salary
+  - **Attendance & Leave**: Leave Balance, Overtime Hours, Shift Details
+- **Collapsible Form Sections**: Organized form with expandable/collapsible sections for better UX
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
+
+### 🎨 Improved User Interface
+- **Modern Card Layout**: Replaced table view with beautiful employee cards
+- **Color-Coded Sections**: Visual organization with icons and color themes
+- **Enhanced Search**: Search across all employee fields including email
+- **Better Visual Hierarchy**: Clear information organization and readability
+
+---
+
 ## Features
 
 ### Core Functionality
 - **Excel Data Import**: Upload employee attendance data via Excel files with automatic data processing
 - **Automated Salary Calculations**: Calculate salaries based on daily rates, attendance (including float values), and statutory components
-- **Employee Management**: Add, edit, and manage employees with salary and attendance tracking
+- **Enhanced Employee Management**: Comprehensive employee profiles with personal, job, and attendance information
 - **Salary Reports**: Generate detailed salary reports with filtering, sorting, and export capabilities
 - **Payment Tracking**: Mark employees as paid/unpaid with toggle functionality
 
@@ -22,6 +42,7 @@ Payroll Pro is a comprehensive payroll management solution designed for companie
 - **Interactive Dashboards**: Real-time insights and metrics for companies and employees
 - **Dark Mode**: Toggle between light and dark themes for better accessibility
 - **Activity Logging**: Track user actions with detailed activity history for each company
+- **Responsive Design**: Optimized for all device sizes with mobile-first approach
 
 ### Advanced Features
 - **Multi-Company Support**: Complete data isolation between different company accounts
@@ -33,6 +54,7 @@ Payroll Pro is a comprehensive payroll management solution designed for companie
   - Manage system-wide settings
 - **Data Export**: Download processed payroll data to Excel format
 - **Secure Authentication**: Role-based login system with password management
+- **Comprehensive Employee Profiles**: Detailed employee information management
 
 ---
 
@@ -86,8 +108,8 @@ The application uses precise salary calculations that match industry standards a
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd payroll-pro
+git clone https://github.com/skirataar/Payrole.git
+cd Payrole
 
 # Install dependencies
 npm install
@@ -104,14 +126,14 @@ Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
 - Node.js (v18+)
 - npm or yarn package manager
-- Modern web browser
+- Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Development Setup
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd payroll-pro
+   git clone https://github.com/skirataar/Payrole.git
+   cd Payrole
    ```
 
 2. **Install dependencies**
@@ -172,6 +194,23 @@ npm run preview
 2. **Serve the dist folder**
    - Upload the contents of the `dist` folder to any static hosting service
    - Configure the server to serve `index.html` for all routes (SPA routing)
+
+### Git Setup (Optional)
+
+```bash
+# Check current branch
+git branch
+
+# Create a new feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git add .
+git commit -m "Your commit message"
+
+# Push to remote
+git push origin feature/your-feature-name
+```
 
 ### Troubleshooting Common Issues
 
@@ -235,11 +274,15 @@ npm run preview
 - Monitor recent activity logs
 - Access quick navigation to all features
 
-#### Employee Management
-- Add new employees manually with salary and attendance data
-- View all employees in a structured table
-- Edit employee information and salary details
-- Remove employees when needed
+#### Enhanced Employee Management
+- **Add New Employees**: Comprehensive form with organized sections
+  - Personal Information (ID, Name, DOB, Gender, Contact, Location)
+  - Job Details (Position, Department, Join Date, Employment Type, Supervisor, Salary)
+  - Attendance & Leave (Leave Balance, Overtime, Shift Details)
+- **Employee Cards**: Beautiful card-based display showing all employee information
+- **Search & Filter**: Search across all employee fields including email
+- **Edit & Delete**: Easy management of employee information
+- **Responsive Design**: Works perfectly on all devices
 
 #### Excel Upload
 - Upload attendance data via Excel files
@@ -299,6 +342,13 @@ npm run preview
 
 ## Key Features Explained
 
+### Enhanced Employee Management
+- **Comprehensive Profiles**: Complete employee information in organized sections
+- **Card-Based Display**: Beautiful, responsive cards showing all employee details
+- **Collapsible Forms**: Organized form sections for better user experience
+- **Search Functionality**: Search across all employee fields
+- **Mobile Responsive**: Optimized for all device sizes
+
 ### Multi-Account System
 - **Company Accounts**: Full payroll management capabilities
 - **Employee Accounts**: Personal salary and attendance viewing
@@ -323,9 +373,21 @@ npm run preview
 - **Export Capabilities**: Download reports in Excel format
 - **Secure Authentication**: Role-based access control
 
+---
+
 ## Changelog
 
-### v1.4.0 (Current)
+### v1.1.0 (Latest) - Enhanced Employee Management
+- **✨ Comprehensive Employee Profiles**: Complete employee information with personal, job, and attendance details
+- **🎨 Card-Based Display**: Beautiful, responsive employee cards replacing table view
+- **📱 Mobile Responsive**: Optimized design for all device sizes
+- **🔍 Enhanced Search**: Search across all employee fields including email
+- **📋 Organized Form Sections**: Collapsible sections for Personal Info, Job Details, and Attendance & Leave
+- **🎯 Better UX**: Improved visual hierarchy and information organization
+- **🔄 Responsive Grid**: 1-3 column layout based on screen size
+- **🎨 Color-Coded Sections**: Visual organization with icons and themes
+
+### v1.0.0 (Previous)
 - **Employee Login System**: Employees can now log in and view their salary details
 - **Enhanced Employee Management**: Add, edit, and manage employees with float salary support
 - **Improved Calculations**: Exact match with salary report calculations in employee dashboard
@@ -333,30 +395,6 @@ npm run preview
 - **Better Data Isolation**: Proper separation of employee data by company
 - **Float Attendance Support**: Preserve decimal attendance values throughout the system
 - **Enhanced UI/UX**: Improved user interface with better navigation and feedback
-
-### v1.3.0 (Previous)
-- Activity logging system for tracking user actions
-- Company-specific activity history
-- Password change functionality in settings
-- Enhanced dashboard with activity display
-- Improved data isolation between companies
-- Performance optimizations
-- Bug fixes and UI improvements
-
-### v1.2.0
-- Multi-company support
-- Role-based authentication
-- Subscription plan enforcement
-- Excel export feature
-- Admin panel integration
-- Codebase cleanup and optimization
-
-### v1.1.0
-- Dark mode support
-- Single company UI streamlining
-- UI spacing and alignment fixes
-- Persistent payment status with localStorage
-- Minor bug fixes
 
 ---
 
@@ -367,6 +405,7 @@ This project is actively maintained. If you encounter any issues or have suggest
 1. Check the troubleshooting section above
 2. Review the changelog for recent updates
 3. Ensure you're using the latest version
+4. Create an issue or pull request on GitHub
 
 ## License
 
@@ -375,4 +414,6 @@ This is proprietary software developed for payroll management. All rights reserv
 ---
 
 **Payroll Pro** - Simplifying payroll management with precision and ease.
+
+*Built with ❤️ using React, Vite, and Tailwind CSS*
 
