@@ -58,6 +58,16 @@ export const CompanyProvider = ({ children }) => {
     }
   }, [uploadedData, currentCompanyId]);
 
+  // Function to save company data to localStorage
+  const saveCompanyData = (data) => {
+    if (!currentCompanyId) return;
+    localStorage.setItem(`uploadedData_${currentCompanyId}`, JSON.stringify(data));
+    // Also store in the default key for backward compatibility
+    if (currentCompanyId === 'default') {
+      localStorage.setItem('uploadedData', JSON.stringify(data));
+    }
+  };
+
   // Update month data with new uploaded data
   const updateMonthData = (data, month) => {
     if (!data || !data.companies) return;

@@ -154,7 +154,7 @@ const defaultUsers = [
 
 // Get users from localStorage or use default
 const savedUsers = localStorage.getItem('mockUsers');
-const mockUsers = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
+let mockUsers = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
 
 // Mock company data - default values
 const defaultCompanyData = {
